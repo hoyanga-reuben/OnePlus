@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{%load static%}
+{% block content %}
+<h2>About Us</h2>
+<p>OnePlus Resilience Organization (ORO) is a non-governmental organization dedicated to building resilience in vulnerable communities. We focus on education, health, and sustainable development.</p>
+
+<div class="row mt-4">
+  <div class="col-md-6">
+    <img src="{% static 'images/team.jpg' %}" class="img-fluid rounded shadow" alt="Our Team">
+  </div>
+  <div class="col-md-6">
+    <h4>What We Do</h4>
+    <ul>
+      <li>Provide community training and awareness programs</li>
+      <li>Support education and youth development</li>
+      <li>Promote environmental sustainability</li>
+    </ul>
+  </div>
+</div>
+{% endblock %}

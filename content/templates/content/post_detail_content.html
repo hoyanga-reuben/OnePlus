@@ -1,0 +1,14 @@
+<article class="mx-auto" style="max-width: 900px;">
+    <h1 class="mb-2">{{ post.title }}</h1>
+    <p class="text-muted">{{ post.published_at|date:"M d, Y" }}{% if post.category %} • {{ post.category.name }}{% endif %}</p>
+    {% if post.cover_image %}<img src="{{ post.cover_image.url }}" class="img-fluid rounded mb-3" alt="{{ post.title }}">{% endif %}
+    <div class="lead">{{ post.body|linebreaks }}</div>
+    <hr/>
+    <p>
+      <strong>Tags:</strong>
+      {% for t in post.tags.all %}
+        <a href="{% url 'blog_list' %}?tag={{ t.slug }}" class="badge text-bg-success text-decoration-none">{{ t.name }}</a>
+      {% empty %} <span class="text-muted">No tags</span>
+      {% endfor %}
+    </p>
+  </article>

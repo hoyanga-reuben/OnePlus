@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+  <h2 class="mb-4">Make Membership Payment</h2>
+
+  <div class="card shadow-sm border-0 p-4">
+    <h3>Pay Membership Fee</h3>
+
+    <p>Bank: <strong>{{ bank_info.bank_name }}</strong></p>
+    <p>Account Number: <strong>{{ bank_info.account_number }}</strong></p>
+    <p>Account Name: <strong>{{ bank_info.account_name }}</strong></p>
+    <p><strong>Use this reference when paying:</strong> {{ bank_info.reference_hint }}</p>
+
+    <hr>
+
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-upload"></i> Submit Payment & Upload Proof
+      </button>
+    </form>
+
+    <p class="text-muted small mt-3">
+      <i class="bi bi-info-circle"></i>
+      Note: Only verified CRDB payments will activate your membership.
+      Upload your bank slip or screenshot as proof of payment.
+    </p>
+  </div>
+</div>
+{% endblock %}

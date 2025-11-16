@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="container my-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10 col-sm-12">
+
+      <!-- Card Wrapper -->
+      <div class="card shadow-sm border-0">
+        <!-- Card Header -->
+        <div class="card-header bg-primary text-white text-center py-3 rounded-top">
+          <h3 class="mb-0">{{ view.object.pk|default:"Add New" }} Post</h3>
+        </div>
+
+        <div class="card-body p-4">
+
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-{{ message.tags }} mb-3">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+
+          <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+
+            <!-- Title -->
+            <div class="mb-3">
+              {{ form.title.label_tag }}
+              {{ form.title|add_class:"form-control" }}
+              {% if form.title.errors %}
+                <div class="text-danger small">{{ form.title.errors }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Type (Blog / News) -->
+            <div class="mb-3">
+              {{ form.type.label_tag }}
+              {{ form.type|add_class:"form-select" }}
+              {% if form.type.errors %}
+                <div class="text-danger small">{{ form.type.errors }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Category -->
+            <div class="mb-3">
+              {{ form.category.label_tag }}
+              {{ form.category|add_class:"form-select" }}
+              {% if form.category.errors %}
+                <div class="text-danger small">{{ form.category.errors }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Tags (as Bootstrap Buttons) -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Tags</label>
+              <div class="d-flex flex-wrap gap-2">
+                {% for checkbox in form.tags %}
+                  <div class="form-check form-check-inline">
+                    <input type="checkbox"
+                           class="btn-check"
+                           name="{{ checkbox.name }}"
+                           value="{{ checkbox.choice_value }}"
+                           id="{{ checkbox.id_for_label }}"
+                           autocomplete="off"
+                           {% if checkbox.choice_value in checkbox.value %}checked{% endif %}>
+                    <label class="btn btn-outline-primary btn-sm" for="{{ checkbox.id_for_label }}">
+                      {{ checkbox.choice_label }}
+                    </label>
+                  </div>
+                {% endfor %}
+              </div>
+              {% if form.tags.errors %}
+                <div class="text-danger small">{{ form.tags.errors }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Summary -->
+            <div class="mb-3">
+              {{ form.summary.label_tag }}
+              {{ form.summary|add_class:"form-control" }}
+              {% if form.summary.errors %}
+                <div class="text-danger small">{{ form.summary.errors }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Body -->
+            <div class="mb-3">
+              {{ form.body.label_tag }}
+              {{ form.body|add_class:"form-control" }}
+              {% if form.body.errors %}
+                <div class="text-danger small">{{ form.body.errors }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Cover Image -->
+            <div class="mb-3">
+              {{ form.cover_image.label_tag }}
+              {{ form.cover_image|add_class:"form-control" }}
+              {% if form.cover_image.errors %}
+                <div class="text-danger small">{{ form.cover_image.errors }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Published Checkbox -->
+            <div class="mb-3 form-check">
+              {{ form.is_published|add_class:"form-check-input" }}
+              {{ form.is_published.label_tag }}
+              {% if form.is_published.errors %}
+                <div class="text-danger small">{{ form.is_published.errors }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Published At -->
+            <div class="mb-3">
+              {{ form.published_at.label_tag }}
+              {{ form.published_at|add_class:"form-control" }}
+              {% if form.published_at.errors %}
+                <div class="text-danger small">{{ form.published_at.errors }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Submit / Cancel -->
+            <div class="d-flex justify-content-between flex-wrap gap-2 mt-4">
+              <button type="submit" class="btn btn-success btn-lg flex-grow-1">Save Post</button>
+              <a href="{% url 'blog_list' %}" class="btn btn-outline-secondary btn-lg flex-grow-1">Cancel</a>
+            </div>
+
+          </form>
+        </div>
+      </div>
+      <!-- End Card -->
+
+    </div>
+  </div>
+</div>
+
+<!-- Optional: Add spacing at bottom for mobile -->
+<div class="mb-5"></div>
+
+{% endblock %}

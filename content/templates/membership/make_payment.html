@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<style>
+  /* === PAYMENT PAGE STYLES === */
+  .payment-header {
+    background: linear-gradient(90deg, #00563f, #008751);
+    color: white;
+    border-radius: 12px;
+    padding: 25px 30px;
+    margin-bottom: 30px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+  }
+
+  .card {
+    border: none;
+    border-radius: 15px;
+    transition: 0.3s;
+  }
+
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+  }
+
+  .bank-info {
+    background: #f7f9fb;
+    border-left: 5px solid #008751;
+    padding: 20px;
+    border-radius: 8px;
+  }
+
+  .control-number {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #004d40;
+  }
+
+  .form-label {
+    font-weight: 600;
+  }
+
+  .upload-box {
+    border: 2px dashed #008751;
+    border-radius: 10px;
+    padding: 20px;
+    background: #f9fdfb;
+  }
+
+  .upload-box:hover {
+    background: #f3f8f6;
+  }
+</style>
+
+<div class="container py-4">
+  <!-- HEADER -->
+  <div class="payment-header">
+    <h2 class="fw-bold mb-1">Membership Payment</h2>
+    <p class="mb-0">Pay your annual membership fee and renew your status with OnePlus Resilience Organization.</p>
+  </div>
+
+  <div class="row">
+    <!-- LEFT COLUMN -->
+    <div class="col-lg-5 mb-4">
+      <!-- MEMBER CARD -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-body text-center">
+          {% if user.profile_image %}
+            <img src="{{ user.profile_image.url }}" class="rounded-circle border border-success mb-3" width="100" height="100" alt="Profile">
+          {% else %}
+            <img src="{% static 'images/default-avatar.png' %}" class="rounded-circle border border-success mb-3" width="100" height="100" alt="Default Profile">
+          {% endif %}
+          <h5 class="fw-bold">{{ user.get_full_name|default:user.username }}</h5>
+          <p class="text-muted small">{{ user.email }}</p>
+          <span class="badge bg-success px-3 py-2">{{ user.get_ngo_role_display|default:"Member" }}</span>
+        </div>
+      </div>
+
+      <!-- PAYMENT INFO -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white fw-bold text-center">
+          CRDB Bank Payment Details
+        </div>
+        <div class="card-body">
+          <div class="bank-info">
+            <p class="mb-1"><strong>Bank:</strong> CRDB Bank PLC</p>
+            <p class="mb-1"><strong>Account Name:</strong> OnePlus Resilience Organization</p>
+            <p class="mb-1"><strong>Account Number:</strong> 01XXXXXXXXXX</p>
+            <p class="mb-1"><strong>Amount:</strong> <span class="text-success fw-bold">TZS 50,000</span></p>
+            <p class="mb-1"><strong>Reference:</strong> {{ user.memberprofile.control_number }}</p>
+            <hr>
+            <p class="small text-muted mb-0">
+              ⚠️ Use your control number as the payment reference. Payments will be verified automatically within <strong>24–48 hours</strong> after CRDB confirms.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONTROL NUMBER -->
+      <div class="card shadow-sm">
+        <div class="card-header bg-success text-white fw-bold text-center">
+          Your Control Number
+        </div>
+        <div class="card-body text-center">
+          {% if user.memberprofile.control_number %}
+            <div class="control-number">{{ user.memberprofile.control_number }}</div>
+            <p class="small text-muted mb-0">Generated on {{ user.memberprofile.control_number_created|date:"M j, Y" }}</p>
+          {% else %}
+            <p class="text-danger small">No control number generated yet.</p>
+            <a href="{% url 'generate_control_number' %}" class="btn btn-outline-success btn-sm mt-2">
+              <i class="bi bi-hash"></i> Generate Control Number
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="col-lg-7">
+      <!-- PAYMENT FORM -->
+      <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white fw-bold">Upload Payment Proof</div>
+        <div class="card-body">
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+
+          <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label for="amount" class="form-label">Amount Paid (TZS)</label>
+              <input type="number" class="form-control" name="amount" id="amount" placeholder="Enter amount (e.g. 50000)" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="transaction_id" class="form-label">Transaction ID / Reference</label>
+              <input type="text" class="form-control" name="transaction_id" id="transaction_id" placeholder="e.g. CRDB12345XYZ" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="payment_proof" class="form-label">Upload Payment Slip (optional)</label>
+              <div class="upload-box text-center">
+                <input type="file" class="form-control" name="payment_proof" id="payment_proof" accept="image/*,application/pdf">
+                <small class="text-muted d-block mt-2">Supported formats: JPG, PNG, or PDF (max 5MB)</small>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="payment_date" class="form-label">Payment Date</label>
+              <input type="date" class="form-control" name="payment_date" id="payment_date" required>
+            </div>
+
+            <div class="text-end">
+              <button type="submit" class="btn btn-success px-4">
+                <i class="bi bi-check-circle"></i> Submit Payment
+              </button>
+            </div>
+          </form>
+
+          <hr class="my-4">
+
+          <!-- PAYMENT STATUS -->
+          {% if user.memberprofile.last_payment_date %}
+          <div class="text-center">
+            <h6 class="fw-bold text-success mb-1">Last Payment Recorded</h6>
+            <p class="text-muted mb-1">
+              <i class="bi bi-calendar-check"></i>
+              {{ user.memberprofile.last_payment_date|date:"F j, Y" }}
+            </p>
+            {% if user.memberprofile.is_active_member %}
+              <p class="text-success small mb-0">✅ Verified and Active Member</p>
+            {% else %}
+              <p class="text-warning small mb-0">⏳ Pending verification by admin</p>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

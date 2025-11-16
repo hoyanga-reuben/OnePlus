@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-10">
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body text-center">
+          <!-- Profile Picture -->
+          {% if user.profile_image %}
+            <img src="{{ user.profile_image.url }}" 
+                 class="rounded-circle shadow mb-3" width="120" height="120" alt="Profile">
+          {% else %}
+            <img src="{% static 'images/default-avatar.png' %}" 
+                 class="rounded-circle shadow mb-3" width="120" height="120" alt="Default Profile">
+          {% endif %}
+
+          <!-- Name & Role -->
+          <h3 class="mb-0">{{ user.get_full_name|default:user.username }}</h3>
+          <p class="text-muted mb-2">
+            {% if user.ngo_role %}
+            <div class="mt-3">
+                <span class="badge bg-info text-dark px-3 py-2">
+                  {{ user.get_ngo_role_display }}
+                </span>
+              </div>
+              
+            {% else %}
+              Member of NGO
+            {% endif %}
+          </p>
+
+          <!-- Edit Button -->
+          <a href="{% url 'settings' %}" class="btn btn-primary btn-sm mb-3">
+            <i class="bi bi-gear"></i> Edit Profile
+          </a>
+        </div>
+      </div>
+
+      <!-- Extra Info Section -->
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-dark text-white fw-bold">
+          Profile Information
+        </div>
+        <div class="card-body">
+          <div class="row mb-2">
+            <div class="col-md-4 fw-bold"><i class="bi bi-envelope"></i> Email:</div>
+            <div class="col-md-8">{{ user.email|default:"Not provided" }}</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-md-4 fw-bold"><i class="bi bi-phone"></i> Phone:</div>
+            <div class="col-md-8">{{ user.phone_number|default:"Not provided" }}</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-md-4 fw-bold"><i class="bi bi-calendar"></i> Joined:</div>
+            <div class="col-md-8">{{ user.date_joined|date:"F j, Y" }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="card shadow-sm border-0 mt-4">
+        <div class="card-header bg-light fw-bold">
+          Quick Links
+        </div>
+        <div class="card-body d-flex flex-wrap gap-3">
+          <a href="{% url 'projects' %}" class="btn btn-outline-primary">
+            <i class="bi bi-folder"></i> View Projects
+          </a>
+          <a href="{% url 'volunteer_list' %}" class="btn btn-outline-success">
+            <i class="bi bi-people"></i> Volunteer Opportunities
+          </a>
+          <a href="{% url 'news_list' %}" class="btn btn-outline-info">
+            <i class="bi bi-newspaper"></i> NGO News
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}News | OnePlus NGO{% endblock %}
+{% block content %}
+<div class="container py-3">
+  <h1 class="mb-4 text-center fw-bold">News & Updates</h1>
+
+  <!-- Add News Button -->
+  {% if request.user.is_authenticated and request.user.role in "admin,manager,staff" %}
+    <div class="text-end mb-3">
+      <a href="{% url 'news_add' %}" class="btn btn-success">
+        <i class="bi bi-plus-circle"></i> Add News
+      </a>
+    </div>
+  {% endif %}
+
+  {% include "content/post_list_content.html" with posts=posts %}
+</div>
+{% endblock %}

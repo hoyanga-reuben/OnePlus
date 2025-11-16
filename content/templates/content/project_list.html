@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+
+<style>
+/* Page layout */
+.page-title {
+    font-weight: 700;
+    font-size: 1.9rem;
+    text-align: center;
+    margin-bottom: 25px;
+    color: #0d6efd;
+}
+
+/* Card styling */
+.project-card {
+    border: none;
+    border-radius: 15px;
+    overflow: hidden;
+    background: #ffffff;
+    transition: 0.3s ease-in-out;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.project-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.project-img {
+    height: 200px;
+    object-fit: cover;
+    width: 100%;
+}
+
+/* Title */
+.project-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #222;
+}
+
+/* Description truncated */
+.project-desc {
+    font-size: 0.95rem;
+    color: #555;
+    line-height: 1.4em;
+    max-height: 2.8em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Status badge */
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+/* Footer buttons spacing */
+.footer-buttons a {
+    margin-right: 5px;
+}
+
+/* Mobile Responsiveness Tweaks */
+@media (max-width: 768px) {
+    .project-img {
+        height: 150px;
+    }
+    .project-title {
+        font-size: 1rem;
+    }
+}
+</style>
+
+<div class="container mt-4">
+
+    <h2 class="page-title">Our Projects</h2>
+
+    {% if request.user.is_authenticated and request.user.ngo_role in 'admin manager staff' %}
+        <div class="text-end mb-3">
+            <a href="{% url 'project_add' %}" class="btn btn-success px-4 shadow-sm">
+                <i class="bi bi-plus-circle"></i> Add Project
+            </a>
+        </div>
+    {% endif %}
+
+    <div class="row g-4">
+        {% for project in projects %}
+        <div class="col-md-4 col-sm-6">
+            <div class="project-card">
+
+                {% if project.hero_image %}
+                    <img src="{{ project.hero_image.url }}" class="project-img" alt="{{ project.title }}">
+                {% else %}
+                    <img src="{% static 'img/default_project.jpg' %}" class="project-img" alt="Default Project Image">
+                {% endif %}
+
+                <div class="p-3">
+                    <h5 class="project-title">{{ project.title }}</h5>
+                    <p class="project-desc">{{ project.description }}</p>
+
+                    <span class="status-badge 
+                        {% if project.get_status_display == 'Completed' %}bg-success{% elif project.get_status_display == 'Ongoing' %}bg-primary{% else %}bg-secondary{% endif %} text-white">
+                        {{ project.get_status_display }}
+                    </span>
+                </div>
+
+                <div class="card-footer bg-light d-flex justify-content-between align-items-center footer-buttons">
+                    <a href="{% url 'project_detail' project.slug %}" class="btn btn-sm btn-primary px-3">
+                        View
+                    </a>
+
+                    {% if request.user.is_authenticated and request.user.ngo_role in 'admin manager staff' %}
+                        <div>
+                            <a href="{% url 'project_edit' project.slug %}" class="btn btn-sm btn-outline-warning">Edit</a>
+                            <a href="{% url 'project_delete' project.slug %}" class="btn btn-sm btn-outline-danger">Delete</a>
+                        </div>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+
+        {% empty %}
+        <div class="col-12 text-center">
+            <p class="text-muted">No projects found.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+{% endblock %}

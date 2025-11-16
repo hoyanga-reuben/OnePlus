@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block title %}{{ post.title }} | News{% endblock %}
+{% block content %}
+{% include "content/post_detail_content.html" with post=post %}
+{% endblock %}

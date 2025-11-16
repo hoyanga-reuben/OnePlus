@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Blog | OnePlus NGO{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <h1 class="mb-4 text-center fw-bold">NGO Blog</h1>
+
+  <!-- Add Blog Post Button -->
+  {% if request.user.is_authenticated and request.user.ngo_role in "admin manager staff" %}
+    <div class="text-end mb-3">
+      <a href="{% url 'blog_add' %}" class="btn btn-success shadow-sm">
+        <i class="bi bi-plus-circle"></i> Add Blog Post
+      </a>
+    </div>
+  {% endif %}
+
+  <!-- Search & Filter Form -->
+  <form class="row g-2 mb-4" method="get">
+    <div class="col-md-4">
+      <input type="text" class="form-control" name="q" placeholder="Search posts..." value="{{ q }}">
+    </div>
+    <div class="col-md-3">
+      <select name="category" class="form-select">
+        <option value="">All Categories</option>
+        {% for c in categories %}
+          <option value="{{ c.slug }}" {% if current_category == c.slug %}selected{% endif %}>
+            {{ c.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <select name="tag" class="form-select">
+        <option value="">All Tags</option>
+        {% for t in tags %}
+          <option value="{{ t.slug }}" {% if current_tag == t.slug %}selected{% endif %}>
+            {{ t.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <button class="btn btn-success w-100">
+        <i class="bi bi-filter"></i> Filter
+      </button>
+    </div>
+  </form>
+
+  <!-- Blog Posts Grid -->
+  <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
+    {% for post in posts %}
+      <div class="col">
+        <div class="card h-100 shadow-sm">
+          {% if post.cover_image %}
+            <img src="{{ post.cover_image.url }}" class="card-img-top img-fluid" alt="{{ post.title }}">
+          {% endif %}
+          <div class="card-body d-flex flex-column">
+            <h5 class="card-title">{{ post.title }}</h5>
+            <p class="text-muted small mb-1">
+              {{ post.category.name }} • {{ post.created_at|date:"M d, Y" }}
+            </p>
+            <p class="card-text">
+              {{ post.summary|default:post.body|truncatechars:150 }}
+            </p>
+
+            <div class="mt-auto d-flex justify-content-between align-items-center">
+              <a href="{{ post.get_absolute_url }}" class="btn btn-outline-success btn-sm">
+                <i class="bi bi-book"></i> Read more
+              </a>
+
+              {% if request.user.is_authenticated and request.user.ngo_role in "admin manager staff" %}
+                <div class="btn-group">
+                  <a href="{% url 'blog_edit' post.id %}" class="btn btn-sm btn-outline-warning">
+                    <i class="bi bi-pencil-square"></i> Edit
+                  </a>
+                  <a href="{% url 'blog_delete' post.id %}" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-trash"></i> Delete
+                  </a>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="col-12 text-center text-muted">
+        <p>No blog posts found.</p>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination -->
+  {% include "content/partials/_pagination.html" with page_obj=page_obj %}
+</div>
+{% endblock %}

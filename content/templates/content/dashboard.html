@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<style>
+  /* === DASHBOARD THEME (kept + slight polish) === */
+  .dashboard-header {
+    background: linear-gradient(90deg, #00563f, #008751);
+    color: white;
+    border-radius: 12px;
+    padding: 25px 30px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+  }
+  .card { border: none; border-radius: 15px; transition: 0.3s ease-in-out; }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 6px 18px rgba(0,0,0,0.1); }
+  .profile-img { border: 3px solid #008751; object-fit: cover; }
+  .bank-box { background: #f7f9fb; border-left: 5px solid #008751; padding: 15px; border-radius: 8px; }
+  .control-number { font-size: 1.4rem; font-weight: 600; color: #004d40; }
+  .summary-small { font-size:0.95rem; }
+  .table-responsive { max-height: 320px; overflow:auto; }
+  @media (max-width: 767px) { .dashboard-header { text-align: center; } }
+</style>
+
+<div class="container py-4">
+
+  <!-- HEADER -->
+  <div class="dashboard-header mb-5">
+    <h2 class="fw-bold mb-1">Welcome, {{ user.get_full_name|default:user.username }}</h2>
+    <p class="mb-0">Member of <strong>OnePlus Resilience Organization</strong></p>
+  </div>
+
+  <div class="row">
+    <!-- LEFT COLUMN -->
+    <div class="col-lg-4 mb-4">
+
+      <!-- PROFILE CARD -->
+      <div class="card text-center shadow-sm p-3">
+        {% if user.profile_image %}
+          <img src="{{ user.profile_image.url }}" alt="Profile" class="rounded-circle profile-img mx-auto mb-3" width="120" height="120">
+        {% else %}
+          <img src="{% static 'images/default-avatar.png' %}" alt="Default Profile" class="rounded-circle profile-img mx-auto mb-3" width="120" height="120">
+        {% endif %}
+
+        <h5 class="fw-bold mb-1">{{ user.get_full_name|default:user.username }}</h5>
+        <p class="text-muted small mb-1">{{ user.email }}</p>
+        <span class="badge bg-success px-3 py-2">{{ user.get_ngo_role_display|default:"Member" }}</span>
+
+        <a href="{% url 'settings' %}" class="btn btn-outline-primary btn-sm mt-3">
+          <i class="bi bi-gear"></i> Edit Profile
+        </a>
+      </div>
+
+      <!-- MEMBERSHIP SUMMARY -->
+      <div class="card mt-4 shadow-sm">
+        <div class="card-header bg-dark text-white fw-bold text-center">
+          Membership Summary
+        </div>
+        <div class="card-body text-center">
+          {% with profile=profile %}
+            {% if profile.is_active_member %}
+              <p class="mb-1"><strong>Status:</strong> <span class="badge bg-success">Active</span></p>
+              <p><strong>Valid Until:</strong> {{ profile.expiry_date|date:"F j, Y" }}</p>
+              <p class="text-success fw-bold">Your membership is verified ✅</p>
+            {% else %}
+              <p class="mb-1"><strong>Status:</strong> <span class="badge bg-danger">Inactive</span></p>
+              <p class="text-muted">Your membership is unpaid or expired.</p>
+              <a href="{% url 'make_payment' %}" class="btn btn-primary mt-2">
+                <i class="bi bi-credit-card"></i> Renew Membership
+              </a>
+            {% endif %}
+          {% endwith %}
+        </div>
+      </div>
+
+      <!-- CONTROL NUMBER -->
+      <div class="card mt-4 shadow-sm">
+        <div class="card-header bg-success text-white fw-bold text-center">
+          Your Control Number
+        </div>
+        <div class="card-body text-center">
+          {% if user.memberprofile.control_number %}
+            <div class="control-number">{{ user.memberprofile.control_number }}</div>
+            <p class="small text-muted mb-1">Generated on {{ user.memberprofile.control_number_created|date:"M j, Y" }}</p>
+          {% else %}
+            <p class="text-danger small">Control number not generated yet.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- CRDB PAYMENT INFO -->
+      <div class="card mt-4 shadow-sm">
+        <div class="card-header bg-primary text-white fw-bold text-center">
+          CRDB Payment Details
+        </div>
+        <div class="card-body">
+          <div class="bank-box">
+            <p class="mb-1"><strong>Bank:</strong> CRDB Bank PLC</p>
+            <p class="mb-1"><strong>Account Name:</strong> OnePlus Resilience Organization</p>
+            <p class="mb-1"><strong>Account Number:</strong> <span class="text-primary fw-bold">01XXXXXXXXXX</span></p>
+            <p class="mb-1"><strong>Reference:</strong> {{ user.memberprofile.control_number }}</p>
+            <hr>
+            <p class="small text-muted mb-0">
+              ⚠️ Please transfer the exact membership fee (<strong>TZS {{ annual_fee }}</strong>) using your
+              control number as the reference. Verification typically takes 24–48 hours.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- QUICK LINKS -->
+      <div class="card mt-4 shadow-sm">
+        <div class="card-header bg-light fw-bold text-center">Explore More</div>
+        <div class="card-body d-flex flex-column gap-2">
+          <a href="{% url 'project_list' %}" class="btn btn-outline-primary"><i class="bi bi-folder"></i> Projects</a>
+          <a href="{% url 'volunteer_list' %}" class="btn btn-outline-success"><i class="bi bi-people"></i> Volunteers</a>
+          <a href="{% url 'news_list' %}" class="btn btn-outline-info"><i class="bi bi-newspaper"></i> News</a>
+          <a href="{% url 'blog_list' %}" class="btn btn-outline-secondary"><i class="bi bi-journal-text"></i> Blog</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="col-lg-8">
+
+      <!-- STATS OVERVIEW -->
+      <div class="row g-3 mb-4">
+        <div class="col-md-6">
+          <div class="card text-center p-3 shadow-sm">
+            <h3 class="fw-bold text-success">{{ projects_count }}</h3>
+            <p class="text-muted mb-0">Active Projects</p>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card text-center p-3 shadow-sm">
+            <h3 class="fw-bold text-primary">{{ volunteers_count }}</h3>
+            <p class="text-muted mb-0">Volunteers Registered</p>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card text-center p-3 shadow-sm">
+            <h3 class="fw-bold text-warning">{{ news_count }}</h3>
+            <p class="text-muted mb-0">News Updates</p>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card text-center p-3 shadow-sm">
+            <h3 class="fw-bold text-danger">{{ blogs_count }}</h3>
+            <p class="text-muted mb-0">Blog Posts</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ORGANIZATION SUMMARY (small) -->
+      {% if members_summary %}
+      <div class="row g-3 mb-3">
+        <div class="col-md-4">
+          <div class="card p-3 text-center shadow-sm">
+            <div class="summary-small">Total Members</div>
+            <div class="fw-bold">{{ members_total }}</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card p-3 text-center shadow-sm">
+            <div class="summary-small">Active Members</div>
+            <div class="fw-bold text-success">{{ active_members_count }}</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card p-3 text-center shadow-sm">
+            <div class="summary-small">Inactive Members</div>
+            <div class="fw-bold text-danger">{{ inactive_members_count }}</div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- PERSONAL INFORMATION -->
+      <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white fw-bold">Personal Information</div>
+        <div class="card-body">
+          <div class="row mb-2">
+            <div class="col-md-4 fw-bold"><i class="bi bi-envelope"></i> Email:</div>
+            <div class="col-md-8">{{ user.email|default:"Not provided" }}</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-md-4 fw-bold"><i class="bi bi-phone"></i> Phone:</div>
+            <div class="col-md-8">{{ user.phone_number|default:"Not provided" }}</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-md-4 fw-bold"><i class="bi bi-calendar"></i> Joined:</div>
+            <div class="col-md-8">{{ user.date_joined|date:"F j, Y" }}</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-md-4 fw-bold"><i class="bi bi-person-badge"></i> Role:</div>
+            <div class="col-md-8">{{ user.get_ngo_role_display }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MEMBER SUMMARY TABLE (leaders only) -->
+      {% if members_summary %}
+      <div class="card mt-4 shadow-sm">
+        <div class="card-header bg-primary text-white fw-bold">Registered Members</div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead class="table-light">
+                <tr>
+                  <th>#</th>
+                  <th>Username / Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for member in members_summary %}
+                <tr>
+                  <td>{{ forloop.counter }}</td>
+                  <td>{{ member.get_full_name|default:member.username }}</td>
+                  <td>{{ member.email }}</td>
+                  <td>{{ member.get_ngo_role_display|default:"Member" }}</td>
+                  <td>
+                    {% if member.memberprofile.is_active_member %}
+                      <span class="badge bg-success">Active</span>
+                    {% else %}
+                      <span class="badge bg-danger">Inactive</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- SUGGESTIONS: submit & recent (visible to all) -->
+      <div class="row mt-4">
+        <div class="col-md-6">
+          <div class="card shadow-sm">
+            <div class="card-header bg-success text-white fw-bold">Share a Suggestion / Opinion</div>
+            <div class="card-body">
+              <form method="post" action="">
+                {% csrf_token %}
+                {{ suggestion_form.as_p }}
+                <button type="submit" class="btn btn-success">
+                  <i class="bi bi-send"></i> Submit Suggestion
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="card shadow-sm">
+            <div class="card-header bg-light fw-bold">Recent Suggestions</div>
+            <div class="card-body">
+              {% if suggestions %}
+                {% for s in suggestions %}
+                <div class="mb-3">
+                  <strong>{{ s.user.get_full_name|default:s.user.username }}</strong>
+                  <small class="text-muted float-end">{{ s.created_at|date:"M d, Y H:i" }}</small>
+                  <p class="mt-2 mb-0">{{ s.message|linebreaksbr }}</p>
+                </div>
+                <hr>
+                {% endfor %}
+              {% else %}
+                <p class="text-muted mb-0">Bado hakuna mapendekezo.</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div> <!-- end right column -->
+  </div>
+</div>
+
+{% endblock %}

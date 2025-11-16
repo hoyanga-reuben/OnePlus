@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="d-flex justify-content-center align-items-center" style="min-height: 70vh;">
+  <div class="card shadow-lg border-0 p-4 text-center" style="max-width: 600px; width: 100%;">
+    <div class="mb-3">
+      <i class="bi bi-envelope-check-fill text-success" style="font-size: 3rem;"></i>
+    </div>
+    <h2 class="mb-3">Verify Your Email Address</h2>
+    <p class="text-muted">
+      We have sent a confirmation email to <strong>{{ user.email }}</strong>. <br>
+      Please follow the link in that email to complete your signup process.
+    </p>
+    <p class="small text-muted">
+      If you don’t see the email in your inbox, please check your <strong>Spam</strong> or <strong>Promotions</strong> folder.  
+      Still no email? <a href="{% url 'account_email' %}">Click here to resend</a>.
+    </p>
+
+    <div class="d-grid mt-4">
+      <a href="{% url 'home' %}" class="btn btn-primary">
+        <i class="bi bi-house-door-fill"></i> Back to Home
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

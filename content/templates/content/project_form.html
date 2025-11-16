@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block content %}
+
+<style>
+  .custom-card { border-radius: 15px; overflow: hidden; }
+
+  .image-upload-box {
+    border: 2px dashed #6c757d;
+    border-radius: 10px;
+    padding: 25px;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  .image-upload-box:hover {
+    border-color: #0d6efd;
+    background: #f1f4ff;
+  }
+  .preview-img {
+    max-width: 100%;
+    max-height: 260px;
+    border-radius: 10px;
+    margin-top: 12px;
+    display: none;
+  }
+</style>
+
+<div class="container py-4">
+
+  <div class="card shadow-lg custom-card mx-auto" style="max-width: 850px;">
+
+    <div class="card-header bg-primary text-white text-center py-3">
+      <h4 class="m-0 fw-bold">
+        {% if form.instance.pk %}
+          ✏ Update Project
+        {% else %}
+          ➕ Create New Project
+        {% endif %}
+      </h4>
+    </div>
+
+    <div class="card-body p-4">
+
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <!-- Project Title -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Project Title</label>
+          {{ form.title|add_class:"form-control form-control-lg" }}
+        </div>
+
+        <!-- Description -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Project Description</label>
+          {{ form.description|add_class:"form-control" }}
+        </div>
+
+        <!-- Image Upload -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Project Image</label>
+
+          <label for="id_hero_image" class="image-upload-box">
+            <p class="mb-1">📁 Drag & Drop or Click to Upload</p>
+            <small class="text-muted">Recommended: 1200 × 800 px</small>
+          </label>
+
+          {{ form.hero_image|add_class:"form-control" }}
+          <img id="preview" class="preview-img">
+
+          {% if form.instance.hero_image %}
+            <p class="mt-2 small">Current Image:</p>
+            <img src="{{ form.instance.hero_image.url }}" class="preview-img" style="display:block;">
+          {% endif %}
+        </div>
+
+        <!-- DOCUMENT UPLOAD (INLINE FORMSET) -->
+        <h5 class="fw-bold mt-4">📄 Project Documents</h5>
+        <p class="text-muted">You can upload multiple documents.</p>
+
+        {{ formset.management_form }}
+
+        {% for doc_form in formset %}
+          <div class="border rounded p-3 mb-3">
+
+            {{ doc_form.id }}
+
+            <div class="mb-2">
+              <label class="form-label">Document Title</label>
+              {{ doc_form.title|add_class:"form-control" }}
+            </div>
+
+            <div class="mb-2">
+              <label class="form-label">Upload File</label>
+              {{ doc_form.file|add_class:"form-control" }}
+            </div>
+
+            {% if doc_form.instance.pk and doc_form.instance.file %}
+              <p>
+                Current File:
+                <a href="{{ doc_form.instance.file.url }}" target="_blank">View</a>
+              </p>
+            {% endif %}
+
+            {% if doc_form.DELETE %}
+              <div class="form-check mt-2">
+                {{ doc_form.DELETE }} <label class="form-check-label">Delete Document</label>
+              </div>
+            {% endif %}
+
+          </div>
+        {% endfor %}
+
+        <!-- Project Status -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Project Status</label>
+          {{ form.status|add_class:"form-select" }}
+        </div>
+
+        <!-- Buttons -->
+        <div class="d-flex justify-content-between mt-4">
+          <a href="{% url 'project_list' %}" class="btn btn-secondary btn-lg">Cancel</a>
+
+          <button type="submit" class="btn btn-primary btn-lg px-4">
+            {% if form.instance.pk %}Save Changes{% else %}Create Project{% endif %}
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  const imageInput = document.getElementById("id_hero_image");
+  const previewImg = document.getElementById("preview");
+
+  imageInput.addEventListener("change", function() {
+    const file = this.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        previewImg.src = e.target.result;
+        previewImg.style.display = "block";
+      };
+      reader.readAsDataURL(file);
+    } else {
+      previewImg.style.display = "none";
+    }
+  });
+</script>
+
+{% endblock %}

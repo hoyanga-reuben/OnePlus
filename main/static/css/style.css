@@ -1,0 +1,43 @@
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background-color: #f9f9f9;
+  }
+  
+  h1, h2, h4 {
+    color: #003366;
+  }
+  
+  .navbar-brand {
+    font-size: 1.2rem;
+  }
+  
+  .card-title {
+    color: #0056b3;
+  }
+  
+  footer {
+    margin-top: 50px;
+  }
+
+  body {
+    background: #f8f9fa;
+  }
+  
+  .card {
+    background: #ffffff;
+    border-radius: 1.2rem;
+  }
+  
+  .form-floating input {
+    border-radius: 0.75rem;
+  }
+  
+  button.btn {
+    transition: 0.3s ease-in-out;
+  }
+  
+  button.btn:hover {
+    transform: translateY(-2px);
+  }
+  
+  

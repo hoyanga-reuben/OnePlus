@@ -1,0 +1,12 @@
+Hello {{ user.first_name|default:user.username }},
+
+Thank you for joining OnePlus Resilience Organization! 🎉  
+
+Please confirm your email address by clicking the link below:
+
+{{ activate_url }}
+
+If you did not sign up, you can safely ignore this email.
+
+Warm regards,  
+OnePlus Resilience Organization (NGO)  

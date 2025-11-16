@@ -1,0 +1,14 @@
+<!-- content/templates/content/volunteer_list.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Volunteers</h1>
+
+<ul>
+  {% for volunteer in volunteers %}
+    <li>{{ volunteer.name }} - {{ volunteer.description }}</li>
+  {% empty %}
+    <li>No volunteers found.</li>
+  {% endfor %}
+</ul>
+{% endblock %}
