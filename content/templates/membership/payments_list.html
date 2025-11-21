@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Payments Verification - Admin{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-primary">💰 Malipo ya Wanachama (Uhakiki)</h2>
+        {% if pending_count > 0 %}
+        <span class="badge bg-danger rounded-pill fs-6 pulse-animation">{{ pending_count }} Pending</span>
+        {% endif %}
+    </div>
+
+    <ul class="nav nav-tabs mb-4" id="paymentsTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab" aria-controls="pending" aria-selected="true">
+                <i class="fas fa-hourglass-half"></i> Kusubiri Uhakiki ({{ pending_count }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab" aria-controls="all" aria-selected="false">
+                <i class="fas fa-list-alt"></i> Malipo Yote ({{ payments|length }})
+            </button>
+        </li>
+    </ul>
+    
+    <div class="tab-content" id="paymentsTabContent">
+        
+        <div class="tab-pane fade show active" id="pending" role="tabpanel" aria-labelledby="pending-tab">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning-subtle text-dark fw-bold">
+                    Malipo Yanayosubiri Hatua Yako
+                </div>
+                <div class="card-body p-0">
+                    {# Tunatumia 'pending_payments' iliyochujwa kutoka kwa View #}
+                    {% if pending_payments %}
+                        <div class="table-responsive">
+                            <table class="table table-hover table-striped mb-0 align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Mwanachama</th>
+                                        <th>Kiasi</th>
+                                        <th>Tarehe ya Lipa</th>
+                                        <th>Tarehe ya Wasilisha</th>
+                                        <th>Kitendo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for payment in pending_payments %}
+                                    <tr class="table-warning">
+                                        <td>{{ payment.id }}</td>
+                                        <td><a href="{% url 'profile' %}?user={{ payment.user.id }}" class="text-dark fw-semibold">{{ payment.user.get_full_name|default:payment.user.username }}</a></td>
+                                        <td class="fw-bold">Tsh {{ payment.amount|floatformat:2 }}</td>
+                                        <td>{{ payment.date_paid|date:"M d, Y" }}</td>
+                                        <td>{{ payment.date_submitted|date:"M d, Y H:i" }}</td>
+                                        <td>
+                                            <a href="{% url 'verify_payment' payment.id %}" class="btn btn-sm btn-success">
+                                                <i class="fas fa-check-circle"></i> Hakiki
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-success m-3 text-center">
+                            <i class="fas fa-mug-hot me-2"></i> Hongera! Hakuna malipo yanayosubiri uhakiki kwa sasa.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="all" role="tabpanel" aria-labelledby="all-tab">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary-subtle text-dark fw-bold">
+                    Malipo Yote
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped mb-0 align-middle" id="allPaymentsTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Mwanachama</th>
+                                    <th>Kiasi</th>
+                                    <th>Mwaka</th>
+                                    <th>Hadhi</th>
+                                    <th>Tarehe ya Uhakiki</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment in payments %}
+                                <tr>
+                                    <td>{{ payment.id }}</td>
+                                    <td><a href="{% url 'profile' %}?user={{ payment.user.id }}" class="text-dark">{{ payment.user.get_full_name|default:payment.user.username }}</a></td>
+                                    <td>Tsh {{ payment.amount|floatformat:2 }}</td>
+                                    <td>{{ payment.year }}</td>
+                                    <td>
+                                        <span class="badge {% if payment.status == 'verified' %}bg-success{% elif payment.status == 'pending' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                                            {{ payment.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ payment.verified_at|default:"N/A"|date:"M d, Y" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+{% comment %}
+<script src="path/to/jquery.js"></script>
+<script src="path/to/datatables.min.js"></script>
+<script>
+    $(document).ready( function () {
+        $('#allPaymentsTable').DataTable();
+    });
+</script>
+{% endcomment %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); } /* Tumia rangi ya hatari (danger) */
+        70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+    }
+    .pulse-animation {
+        animation: pulse 1.5s infinite;
+    }
+</style>
+{% endblock %}

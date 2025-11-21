@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% load static %}
+{% load crispy_forms_tags %} 
+{# Hii inahitaji `pip install django-crispy-forms` na kuiweka kwenye settings, inafanya form kuonekana vizuri zaidi #}
+
+{% block title %}Panga Mkutano Mpya{% endblock %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white text-center py-3">
+                    {% if form.instance.pk %}
+                        <h3 class="mb-0"><i class="fas fa-edit me-2"></i> HARIRI MKUTANO: {{ form.instance.title }}</h3>
+                    {% else %}
+                        <h3 class="mb-0"><i class="fas fa-plus-circle me-2"></i> PANGA MKUTANO MPYA</h3>
+                    {% endif %}
+                </div>
+                <div class="card-body p-4">
+                    <form method="post">
+                        {% csrf_token %}
+
+                        {# --- SECTION 1: TAARIFA ZA MSINGI (Basic Info) --- #}
+                        <h5 class="text-secondary mb-3"><i class="fas fa-info-circle me-2"></i> Taarifa za Msingi</h5>
+                        
+                        {# Kichwa cha Mkutano #}
+                        {{ form.title|as_crispy_field }}
+                        
+                        {# Maelezo #}
+                        {{ form.description|as_crispy_field }}
+
+                        <hr class="mt-4 mb-4">
+
+                        {# --- SECTION 2: MUDA NA LINKI (Time & Link) --- #}
+                        <h5 class="text-secondary mb-3"><i class="fas fa-clock me-2"></i> Muda na Mahali</h5>
+                        
+                        <div class="row">
+                            {# Tarehe ya Kuanza #}
+                            <div class="col-md-6">
+                                {{ form.start_time|as_crispy_field }}
+                            </div>
+                            {# Tarehe ya Kuisha #}
+                            <div class="col-md-6">
+                                {{ form.end_time|as_crispy_field }}
+                            </div>
+                        </div>
+
+                        {# Mahali/Location #}
+                        {{ form.location|as_crispy_field }}
+
+                        {# Conference Link #}
+                        {{ form.conference_link|as_crispy_field }}
+                        <small class="form-text text-muted mb-3 d-block">Weka linki ya mkutano wa mtandaoni (Zoom, Google Meet, n.k.).</small>
+
+                        <hr class="mt-4 mb-4">
+
+                        {# --- SECTION 3: WASHIRIKI (Attendees) --- #}
+                        <h5 class="text-secondary mb-3"><i class="fas fa-users me-2"></i> Chagua Washiriki</h5>
+                        
+                        {# Checkbox List kwa Attendees #}
+                        <div class="form-group mb-4">
+                            <label class="form-label fw-bold">{{ form.attendees.label }}</label>
+                            <div class="attendees-checkbox-list border p-3 rounded bg-light" style="max-height: 200px; overflow-y: auto;">
+                                {# Hapa ndipo crispy-forms itaweka list ya checkboxes #}
+                                {{ form.attendees|as_crispy_field }} 
+                            </div>
+                        </div>
+                        
+                        {# --- SUBMIT BUTTON --- #}
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg mt-3">
+                                <i class="fas fa-save me-2"></i> Hifadhi Mkutano
+                            </button>
+                        </div>
+                        
+                        <a href="{% url 'meeting_list' %}" class="btn btn-link mt-2 text-muted">Rudi kwenye Orodha ya Mikutano</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Custom style to make the checkboxes look cleaner */
+.attendees-checkbox-list ul {
+    list-style: none;
+    padding-left: 0;
+    columns: 2; /* Inagawanya listi katika columns 2 */
+}
+.attendees-checkbox-list label {
+    margin-left: 5px;
+    font-weight: normal;
+}
+/* Kurekebisha muonekano wa datetime-local kwa browsers mbalimbali */
+input[type="datetime-local"] {
+    padding: 0.375rem 0.75rem;
+    line-height: 1.5;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    width: 100%;
+}
+</style>
+{% endblock %}

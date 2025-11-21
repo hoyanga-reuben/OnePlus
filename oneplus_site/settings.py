@@ -9,12 +9,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ===================== SECURITY =====================
 SECRET_KEY = 'django-insecure-a1w%y*p!tw^3#h1%@ynm)h2zoge*vcsxlw97s#%0x187^x9@mz'
+
+# !!! MUHIMU KWA LOCAL DEVELOPMENT !!!
+# Tumeweka DEBUG = True ili kuwezesha SQLite database.
+# Inapotumwa (deployed) kwenye PythonAnywhere, lazima irudi kuwa DEBUG = False.
 DEBUG = False
 
 # Allowed hosts (update after hosting)
 ALLOWED_HOSTS = [
     "127.0.0.1",
     "localhost",
+    "hoyangareuben1998.pythonanywhere.com",
     ".pythonanywhere.com",
 ]
 
@@ -31,6 +36,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',
+    'django.contrib.humanize',
+    'crispy_forms',
+    'crispy_bootstrap5',
 
     # Background Tasks
     'django_crontab',
@@ -38,6 +46,8 @@ INSTALLED_APPS = [
     # Project apps
     'main',
     'content',
+    'chat',
+    'channels',
 
     # Third-party apps
     'django_ckeditor_5',
@@ -52,6 +62,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'content.middleware.LastActivityMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -81,17 +92,51 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'oneplus_site.wsgi.application'
 
-# ===================== DATABASE =====================
-DATABASES = {
+
+# ===================== ASGI/CHANNELS CONFIGURATION =====================
+# Kubadilisha web server kutoka WSGI (HTTP) kwenda ASGI (HTTP + WebSockets)
+ASGI_APPLICATION = 'oneplus_site.asgi.application'
+
+# Channel Layer inasimamia usafirishaji wa ujumbe (inahitaji Redis kwa Production)
+# Kwa Development, tunatumia InMemoryChannelLayer (inayojengwa ndani)
+CHANNEL_LAYERS = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'Reuben1998$oneplusresilence_DB',    # Your DB name in PythonAnywhere
-        'USER': 'Reuben1998',                    # Replace with PythonAnywhere MySQL user
-        'PASSWORD': '@Hoyanga-1998#',      # Replace with MySQL password
-        'HOST': 'Reuben1998.mysql.pythonanywhere-services.com',
-        'PORT': '3306',
-    }
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
 }
+
+# ===================== DATABASE CONFIGURATION (Local vs Production) =====================
+
+# 1. Configuration ya MySQL (PythonAnywhere / Production)
+# Hii inatumika tu wakati DEBUG = False
+PA_DATABASE_CONFIG = {
+    'ENGINE': 'django.db.backends.mysql',
+    'NAME': 'hoyangareuben1998$oneplusresilence_DB',
+    'USER': 'hoyangareuben1998',
+    'PASSWORD': '@Hoyanga-1998#',
+    'HOST': 'hoyangareuben1998.mysql.pythonanywhere-services.com',
+    'PORT': '3306',
+}
+
+# 2. Configuration ya SQLite (Local Server / Development)
+# Hii inatumika tu wakati DEBUG = True
+LOCAL_DATABASE_CONFIG = {
+    'ENGINE': 'django.db.backends.sqlite3',
+    'NAME': BASE_DIR / 'db.sqlite3',
+}
+
+
+# 3. Kuchagua Database Kulingana na Mazingira
+if DEBUG:
+    # LOCAL: Tumia SQLite ili kuepuka kuunganisha kwenye mtandao
+    DATABASES = {
+        'default': LOCAL_DATABASE_CONFIG
+    }
+else:
+    # PRODUCTION: Tumia MySQL (PythonAnywhere)
+    DATABASES = {
+        'default': PA_DATABASE_CONFIG
+    }
 
 # ===================== AUTH =====================
 AUTH_PASSWORD_VALIDATORS = [
@@ -112,7 +157,7 @@ ACCOUNT_LOGOUT_REDIRECT_URL = '/'
 
 ACCOUNT_USERNAME_REQUIRED = True
 ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+ACCOUNT_EMAIL_VERIFICATION = "none" #"mandatory"
 ACCOUNT_AUTHENTICATION_METHOD = "username_email"
 
 ACCOUNT_FORMS = {
@@ -159,12 +204,16 @@ CKEDITOR_5_CONFIGS = {
 }
 
 # ===================== SECURITY (production) =====================
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
+CSRF_TRUSTED_ORIGINS = ['https://hoyangareuben1998.pythonanywhere.com']
 
 # ===================== CRON JOBS =====================
 CRONJOBS = [
     ('0 0 * * *', 'membership.tasks.deactivate_expired_members'),
 ]
+
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"

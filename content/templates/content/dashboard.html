@@ -1,281 +1,499 @@
 {% extends "base.html" %}
 {% load static %}
+
+{% block title %}Dashboard | {{ user.get_full_name|default:user.username }}{% endblock %}
+
 {% block content %}
 
 <style>
-  /* === DASHBOARD THEME (kept + slight polish) === */
-  .dashboard-header {
-    background: linear-gradient(90deg, #00563f, #008751);
-    color: white;
-    border-radius: 12px;
-    padding: 25px 30px;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.2);
-  }
-  .card { border: none; border-radius: 15px; transition: 0.3s ease-in-out; }
-  .card:hover { transform: translateY(-3px); box-shadow: 0 6px 18px rgba(0,0,0,0.1); }
-  .profile-img { border: 3px solid #008751; object-fit: cover; }
-  .bank-box { background: #f7f9fb; border-left: 5px solid #008751; padding: 15px; border-radius: 8px; }
-  .control-number { font-size: 1.4rem; font-weight: 600; color: #004d40; }
-  .summary-small { font-size:0.95rem; }
-  .table-responsive { max-height: 320px; overflow:auto; }
-  @media (max-width: 767px) { .dashboard-header { text-align: center; } }
+    /* === GLOBAL STYLES & TYPOGRAPHY === */
+    :root {
+        --primary-green: #008751; /* Deeper, rich green */
+        --secondary-dark: #00563f;
+        --light-bg: #f8f9fa;
+        --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+    body { background-color: var(--light-bg); }
+    .dashboard-header {
+        background: linear-gradient(135deg, var(--primary-green), var(--secondary-dark));
+        color: white;
+        border-radius: 16px;
+        padding: 30px 40px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        margin-bottom: 40px;
+    }
+
+    /* === CARD STYLES (Advanced & Professional) === */
+    .card { 
+        border: 1px solid #e0e0e0; 
+        border-radius: 12px; 
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
+        box-shadow: var(--card-shadow);
+        overflow: hidden; /* For meeting list overflow effect */
+    }
+    .card:hover { 
+        transform: translateY(-5px); 
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15); 
+    }
+    .card-header { 
+        border-bottom: 1px solid #f0f0f0; 
+        background-color: white; 
+        font-size: 1.1rem; 
+        padding: 1rem 1.5rem; 
+    }
+
+    /* === PROFILE CARD (Made smaller/sleeker) === */
+    .profile-card-body {
+        padding: 1.5rem;
+    }
+    .profile-img { 
+        border: 4px solid var(--primary-green); 
+        object-fit: cover; 
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .profile-role { 
+        font-size: 0.85rem; 
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        color: white;
+        background-color: var(--primary-green);
+        padding: 4px 12px;
+        border-radius: 20px;
+        display: inline-block;
+    }
+
+    /* === STATS CARDS (Uniform and compact) === */
+    .stat-card {
+        padding: 15px;
+        background-color: white;
+        border-radius: 12px;
+        height: 100%;
+    }
+    .stat-icon {
+        font-size: 1.8rem;
+        opacity: 0.7;
+    }
+    .control-number-display {
+        background-color: #f1f8e9; /* Very light green */
+        border: 1px dashed var(--primary-green);
+        padding: 15px;
+        border-radius: 10px;
+        margin-top: 15px;
+    }
+    .control-number { 
+        font-size: 1.5rem; 
+        font-weight: 700; 
+        color: var(--secondary-dark); 
+        letter-spacing: 1px;
+    }
+
+    /* === MEMBER COUNT CARD (The requested card - now Sleek) === */
+    .member-count-card {
+        background: linear-gradient(45deg, #e3f2fd, #bbdefb);
+        border: 1px solid #90caf9;
+    }
+    .member-total-text {
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: var(--primary-green);
+        line-height: 1;
+    }
+    .member-link-btn {
+        background-color: var(--primary-green);
+        border-color: var(--primary-green);
+    }
+    .member-link-btn:hover {
+        background-color: var(--secondary-dark);
+        border-color: var(--secondary-dark);
+    }
+    
+    /* === LIVE PULSE & MEETING LIST === */
+    .live-pulse { animation: live-pulse 1.5s infinite; }
+    .meeting-card { border-left: 4px solid var(--primary-green); }
+    .table-responsive { max-height: 300px; overflow-y:auto; border-radius: 8px; border: 1px solid #e0e0e0; }
+    
+    /* Utility for better table contrast on scroll */
+    .table-responsive table thead th { 
+        background-color: var(--secondary-dark); 
+        color: white;
+    }
 </style>
 
 <div class="container py-4">
 
-  <!-- HEADER -->
-  <div class="dashboard-header mb-5">
-    <h2 class="fw-bold mb-1">Welcome, {{ user.get_full_name|default:user.username }}</h2>
-    <p class="mb-0">Member of <strong>OnePlus Resilience Organization</strong></p>
-  </div>
-
-  <div class="row">
-    <!-- LEFT COLUMN -->
-    <div class="col-lg-4 mb-4">
-
-      <!-- PROFILE CARD -->
-      <div class="card text-center shadow-sm p-3">
-        {% if user.profile_image %}
-          <img src="{{ user.profile_image.url }}" alt="Profile" class="rounded-circle profile-img mx-auto mb-3" width="120" height="120">
-        {% else %}
-          <img src="{% static 'images/default-avatar.png' %}" alt="Default Profile" class="rounded-circle profile-img mx-auto mb-3" width="120" height="120">
-        {% endif %}
-
-        <h5 class="fw-bold mb-1">{{ user.get_full_name|default:user.username }}</h5>
-        <p class="text-muted small mb-1">{{ user.email }}</p>
-        <span class="badge bg-success px-3 py-2">{{ user.get_ngo_role_display|default:"Member" }}</span>
-
-        <a href="{% url 'settings' %}" class="btn btn-outline-primary btn-sm mt-3">
-          <i class="bi bi-gear"></i> Edit Profile
-        </a>
-      </div>
-
-      <!-- MEMBERSHIP SUMMARY -->
-      <div class="card mt-4 shadow-sm">
-        <div class="card-header bg-dark text-white fw-bold text-center">
-          Membership Summary
-        </div>
-        <div class="card-body text-center">
-          {% with profile=profile %}
-            {% if profile.is_active_member %}
-              <p class="mb-1"><strong>Status:</strong> <span class="badge bg-success">Active</span></p>
-              <p><strong>Valid Until:</strong> {{ profile.expiry_date|date:"F j, Y" }}</p>
-              <p class="text-success fw-bold">Your membership is verified ✅</p>
-            {% else %}
-              <p class="mb-1"><strong>Status:</strong> <span class="badge bg-danger">Inactive</span></p>
-              <p class="text-muted">Your membership is unpaid or expired.</p>
-              <a href="{% url 'make_payment' %}" class="btn btn-primary mt-2">
-                <i class="bi bi-credit-card"></i> Renew Membership
-              </a>
-            {% endif %}
-          {% endwith %}
-        </div>
-      </div>
-
-      <!-- CONTROL NUMBER -->
-      <div class="card mt-4 shadow-sm">
-        <div class="card-header bg-success text-white fw-bold text-center">
-          Your Control Number
-        </div>
-        <div class="card-body text-center">
-          {% if user.memberprofile.control_number %}
-            <div class="control-number">{{ user.memberprofile.control_number }}</div>
-            <p class="small text-muted mb-1">Generated on {{ user.memberprofile.control_number_created|date:"M j, Y" }}</p>
-          {% else %}
-            <p class="text-danger small">Control number not generated yet.</p>
-          {% endif %}
-        </div>
-      </div>
-
-      <!-- CRDB PAYMENT INFO -->
-      <div class="card mt-4 shadow-sm">
-        <div class="card-header bg-primary text-white fw-bold text-center">
-          CRDB Payment Details
-        </div>
-        <div class="card-body">
-          <div class="bank-box">
-            <p class="mb-1"><strong>Bank:</strong> CRDB Bank PLC</p>
-            <p class="mb-1"><strong>Account Name:</strong> OnePlus Resilience Organization</p>
-            <p class="mb-1"><strong>Account Number:</strong> <span class="text-primary fw-bold">01XXXXXXXXXX</span></p>
-            <p class="mb-1"><strong>Reference:</strong> {{ user.memberprofile.control_number }}</p>
-            <hr>
-            <p class="small text-muted mb-0">
-              ⚠️ Please transfer the exact membership fee (<strong>TZS {{ annual_fee }}</strong>) using your
-              control number as the reference. Verification typically takes 24–48 hours.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <!-- QUICK LINKS -->
-      <div class="card mt-4 shadow-sm">
-        <div class="card-header bg-light fw-bold text-center">Explore More</div>
-        <div class="card-body d-flex flex-column gap-2">
-          <a href="{% url 'project_list' %}" class="btn btn-outline-primary"><i class="bi bi-folder"></i> Projects</a>
-          <a href="{% url 'volunteer_list' %}" class="btn btn-outline-success"><i class="bi bi-people"></i> Volunteers</a>
-          <a href="{% url 'news_list' %}" class="btn btn-outline-info"><i class="bi bi-newspaper"></i> News</a>
-          <a href="{% url 'blog_list' %}" class="btn btn-outline-secondary"><i class="bi bi-journal-text"></i> Blog</a>
-        </div>
-      </div>
+    {# HEADER SECTION #}
+    <div class="dashboard-header">
+        <h2 class="fw-bold mb-1">Karibu, {{ user.get_full_name|default:user.username }}</h2>
+        <p class="mb-0 fs-5">OnePlus Resilience Organization | {{ user.get_ngo_role_display|default:"Member" }}</p>
     </div>
 
-    <!-- RIGHT COLUMN -->
-    <div class="col-lg-8">
+    <div class="row g-4">
+        
+        {# LEFT COLUMN: PROFILE, MEMBERSHIP, BANK INFO #}
+        <div class="col-lg-4">
 
-      <!-- STATS OVERVIEW -->
-      <div class="row g-3 mb-4">
-        <div class="col-md-6">
-          <div class="card text-center p-3 shadow-sm">
-            <h3 class="fw-bold text-success">{{ projects_count }}</h3>
-            <p class="text-muted mb-0">Active Projects</p>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="card text-center p-3 shadow-sm">
-            <h3 class="fw-bold text-primary">{{ volunteers_count }}</h3>
-            <p class="text-muted mb-0">Volunteers Registered</p>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="card text-center p-3 shadow-sm">
-            <h3 class="fw-bold text-warning">{{ news_count }}</h3>
-            <p class="text-muted mb-0">News Updates</p>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="card text-center p-3 shadow-sm">
-            <h3 class="fw-bold text-danger">{{ blogs_count }}</h3>
-            <p class="text-muted mb-0">Blog Posts</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- ORGANIZATION SUMMARY (small) -->
-      {% if members_summary %}
-      <div class="row g-3 mb-3">
-        <div class="col-md-4">
-          <div class="card p-3 text-center shadow-sm">
-            <div class="summary-small">Total Members</div>
-            <div class="fw-bold">{{ members_total }}</div>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="card p-3 text-center shadow-sm">
-            <div class="summary-small">Active Members</div>
-            <div class="fw-bold text-success">{{ active_members_count }}</div>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="card p-3 text-center shadow-sm">
-            <div class="summary-small">Inactive Members</div>
-            <div class="fw-bold text-danger">{{ inactive_members_count }}</div>
-          </div>
-        </div>
-      </div>
-      {% endif %}
-
-      <!-- PERSONAL INFORMATION -->
-      <div class="card shadow-sm">
-        <div class="card-header bg-dark text-white fw-bold">Personal Information</div>
-        <div class="card-body">
-          <div class="row mb-2">
-            <div class="col-md-4 fw-bold"><i class="bi bi-envelope"></i> Email:</div>
-            <div class="col-md-8">{{ user.email|default:"Not provided" }}</div>
-          </div>
-          <div class="row mb-2">
-            <div class="col-md-4 fw-bold"><i class="bi bi-phone"></i> Phone:</div>
-            <div class="col-md-8">{{ user.phone_number|default:"Not provided" }}</div>
-          </div>
-          <div class="row mb-2">
-            <div class="col-md-4 fw-bold"><i class="bi bi-calendar"></i> Joined:</div>
-            <div class="col-md-8">{{ user.date_joined|date:"F j, Y" }}</div>
-          </div>
-          <div class="row mb-2">
-            <div class="col-md-4 fw-bold"><i class="bi bi-person-badge"></i> Role:</div>
-            <div class="col-md-8">{{ user.get_ngo_role_display }}</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- MEMBER SUMMARY TABLE (leaders only) -->
-      {% if members_summary %}
-      <div class="card mt-4 shadow-sm">
-        <div class="card-header bg-primary text-white fw-bold">Registered Members</div>
-        <div class="card-body">
-          <div class="table-responsive">
-            <table class="table table-striped">
-              <thead class="table-light">
-                <tr>
-                  <th>#</th>
-                  <th>Username / Name</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for member in members_summary %}
-                <tr>
-                  <td>{{ forloop.counter }}</td>
-                  <td>{{ member.get_full_name|default:member.username }}</td>
-                  <td>{{ member.email }}</td>
-                  <td>{{ member.get_ngo_role_display|default:"Member" }}</td>
-                  <td>
-                    {% if member.memberprofile.is_active_member %}
-                      <span class="badge bg-success">Active</span>
+            {# PROFILE CARD (Small & Sleek) #}
+            <div class="card shadow-lg mb-4">
+                <div class="profile-card-body text-center">
+                    {% if user.profile_image %}
+                        <img src="{{ user.profile_image.url }}" alt="Profile" class="rounded-circle profile-img mx-auto mb-3" width="100" height="100">
                     {% else %}
-                      <span class="badge bg-danger">Inactive</span>
+                        <img src="{% static 'images/default-avatar.png' %}" alt="Default Profile" class="rounded-circle profile-img mx-auto mb-3" width="100" height="100">
                     {% endif %}
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-      {% endif %}
 
-      <!-- SUGGESTIONS: submit & recent (visible to all) -->
-      <div class="row mt-4">
-        <div class="col-md-6">
-          <div class="card shadow-sm">
-            <div class="card-header bg-success text-white fw-bold">Share a Suggestion / Opinion</div>
-            <div class="card-body">
-              <form method="post" action="">
-                {% csrf_token %}
-                {{ suggestion_form.as_p }}
-                <button type="submit" class="btn btn-success">
-                  <i class="bi bi-send"></i> Submit Suggestion
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
+                    <h5 class="fw-bold mb-1">{{ user.get_full_name|default:user.username }}</h5>
+                    <p class="text-muted small mb-3">{{ user.email }}</p>
+                    <span class="profile-role mb-3">{{ user.get_ngo_role_display|default:"Member" }}</span>
 
-        <div class="col-md-6">
-          <div class="card shadow-sm">
-            <div class="card-header bg-light fw-bold">Recent Suggestions</div>
-            <div class="card-body">
-              {% if suggestions %}
-                {% for s in suggestions %}
-                <div class="mb-3">
-                  <strong>{{ s.user.get_full_name|default:s.user.username }}</strong>
-                  <small class="text-muted float-end">{{ s.created_at|date:"M d, Y H:i" }}</small>
-                  <p class="mt-2 mb-0">{{ s.message|linebreaksbr }}</p>
+                    <a href="{% url 'settings' %}" class="btn btn-outline-secondary btn-sm mt-3 w-100">
+                        <i class="fas fa-edit me-1"></i> Edit Profile & Settings
+                    </a>
                 </div>
-                <hr>
-                {% endfor %}
-              {% else %}
-                <p class="text-muted mb-0">Bado hakuna mapendekezo.</p>
-              {% endif %}
             </div>
-          </div>
-        </div>
-      </div>
 
-    </div> <!-- end right column -->
-  </div>
+            {# MEMBERSHIP STATUS CARD #}
+            <div class="card shadow-lg mb-4">
+                <div class="card-header bg-dark text-white fw-bold">
+                    <i class="fas fa-id-badge me-2"></i> Muhtasari wa Uanachama
+                </div>
+                <div class="card-body text-center">
+                    {% with profile=profile %}
+                        
+                        {# Status Block #}
+                        {% if has_pending_payment %}
+                            <p class="mb-1 text-warning fw-bold">Hadhi: <span class="badge bg-warning pending-status">Pending Review</span></p>
+                            <p class="text-warning small mt-2">Malipo yako yanasubiri uhakiki.</p>
+                            <a href="{% url 'make_payment' %}" class="btn btn-sm btn-outline-warning mt-2 w-100"><i class="fas fa-clock"></i> Review Payments</a>
+                        
+                        {% elif profile.is_active_member %}
+                            <p class="mb-1 text-success fw-bold">Hadhi: <span class="badge bg-success">Active Member</span></p>
+                            <p class="text-muted small mt-2">Uanachama wako ni halali hadi:</p>
+                            <h5 class="fw-bold text-primary">{{ profile.expiry_date|date:"F j, Y" }}</h5>
+                            <a href="{% url 'make_payment' %}" class="btn btn-sm btn-outline-primary mt-2 w-100"><i class="fas fa-redo"></i> Renew Now</a>
+
+                        {% else %}
+                            <p class="mb-1 text-danger fw-bold">Hadhi: <span class="badge bg-danger">Inactive/Expired</span></p>
+                            <p class="text-muted small mt-2">Uanachama wako umemalizika.</p>
+                            <a href="{% url 'make_payment' %}" class="btn btn-primary mt-2 w-100">
+                                <i class="fas fa-credit-card"></i> Lipia Ada (TZS {{ annual_fee|floatformat:"-2" }})
+                            </a>
+                        {% endif %}
+
+                        <hr class="my-3">
+                        
+                        {# Financial Summary #}
+                        <div class="row small text-start">
+                            <div class="col-6"><strong>Paid This Year:</strong></div>
+                            <div class="col-6 text-end">TZS {{ profile.total_verified_paid_this_year|floatformat:"-2" }}</div>
+                            <div class="col-6"><strong>Current Balance:</strong></div>
+                            <div class="col-6 text-end {% if profile.current_balance < 0 %}text-danger{% else %}text-success{% endif %}">
+                                TZS {{ profile.current_balance|floatformat:"-2" }}
+                            </div>
+                        </div>
+                    {% endwith %}
+                </div>
+            </div>
+
+            {# CONTROL NUMBER & BANK INFO CARD #}
+            <div class="card shadow-lg mb-4">
+                <div class="card-header bg-primary text-white fw-bold">
+                    <i class="fas fa-qrcode me-2"></i> Namba ya Udhibiti & Malipo
+                </div>
+                <div class="card-body">
+                    {# Control Number Section #}
+                    <h6 class="fw-bold mb-2 text-muted">Namba yako ya Udhibiti:</h6>
+                    <div class="control-number-display text-center">
+                        {% if profile.control_number %}
+                            <div class="control-number">{{ profile.control_number }}</div>
+                            <p class="small text-muted mb-0">Imeundwa: {{ profile.control_number_created|date:"M j, Y" }}</p>
+                        {% else %}
+                            <p class="text-danger small mb-0">Control number haijaumbwa.</p>
+                        {% endif %}
+                    </div>
+                    
+                    <hr class="my-3">
+
+                    {# Bank Info #}
+                    <h6 class="fw-bold mb-2 text-muted">Maelezo ya Benki (CRDB):</h6>
+                    <div class="bank-box p-3 bg-light border border-info rounded-3">
+                        <p class="mb-1 small"><strong>Bank:</strong> CRDB Bank PLC</p>
+                        <p class="mb-1 small"><strong>Jina:</strong> ONEPLUS RESILIENCE UNIVERSE ORGANIZATION</p>
+                        <p class="mb-1 small"><strong>Akaunti:</strong> <span class="fw-bold text-info">015C0011TFE00</span></p>
+                        <p class="small text-danger mt-2 mb-0">
+                            ⚠️ Tumia Control Number kama Reference ya Malipo.
+                        </p>
+                        <a href="{% url 'make_payment' %}" class="btn btn-sm btn-outline-info mt-3 w-100">
+                            Wasilisha Stakabadhi ya Malipo
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        {# RIGHT COLUMN: STATS, MEETINGS, ADMIN SUMMARY, SUGGESTIONS #}
+        <div class="col-lg-8">
+
+            {# STATS OVERVIEW (Compact & Professional) #}
+            <div class="row g-3 mb-4">
+                
+                {# KADI MPYA YA ORODHA YA WANACHAMA (The one requested to be small/sleek) #}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card text-center stat-card member-count-card shadow-lg h-100">
+                        <i class="fas fa-users-cog text-primary stat-icon mb-2"></i>
+                        <p class="text-dark fw-bold mb-1">Wanachama Wote & Chat</p>
+                        <div class="member-total-text">{{ members_total }}</div>
+                        <p class="text-muted small mt-0 mb-3">Total Registered Members</p>
+                        <a href="{% url 'user_list' %}" class="btn member-link-btn btn-sm w-100 fw-bold">
+                            <i class="fas fa-list me-1"></i> Tazama Orodha
+                        </a>
+                    </div>
+                </div>
+
+                {# OTHER STATS CARDS (Uniform style) #}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card text-center stat-card shadow-sm h-100">
+                        <i class="fas fa-project-diagram text-success stat-icon mb-2"></i>
+                        <p class="text-muted mb-1">Active Projects</p>
+                        <h3 class="fw-bold text-success">{{ projects_count }}</h3>
+                        <a href="{% url 'project_list' %}" class="btn btn-outline-success btn-sm mt-2 w-100">View Projects</a>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="card text-center stat-card shadow-sm h-100">
+                        <i class="fas fa-hands-helping text-info stat-icon mb-2"></i>
+                        <p class="text-muted mb-1">Volunteers Registered</p>
+                        <h3 class="fw-bold text-info">{{ volunteers_count }}</h3>
+                        <a href="{% url 'volunteer_list' %}" class="btn btn-outline-info btn-sm mt-2 w-100">Volunteering</a>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 col-lg-4">
+                    <div class="card text-center stat-card shadow-sm h-100">
+                        <i class="fas fa-newspaper text-warning stat-icon mb-2"></i>
+                        <p class="text-muted mb-1">News Updates</p>
+                        <h3 class="fw-bold text-warning">{{ news_count }}</h3>
+                        <a href="{% url 'news_list' %}" class="btn btn-outline-warning btn-sm mt-2 w-100">Read News</a>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="card text-center stat-card shadow-sm h-100">
+                        <i class="fas fa-edit text-danger stat-icon mb-2"></i>
+                        <p class="text-muted mb-1">Blog Posts</p>
+                        <h3 class="fw-bold text-danger">{{ blogs_count }}</h3>
+                        <a href="{% url 'blog_list' %}" class="btn btn-outline-danger btn-sm mt-2 w-100">View Blog</a>
+                    </div>
+                </div>
+            </div>
+
+            {# UPCOMING MEETINGS #}
+            <div class="card shadow-lg mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-calendar-alt me-2 text-primary"></i> Mikutano Inayofuata ({{ upcoming_meetings|length }})</span>
+                    <a href="{% url 'meeting_list' %}" class="btn btn-sm btn-outline-primary">Tazama Ratiba Kamili <i class="fas fa-arrow-right ms-1"></i></a>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for meeting in upcoming_meetings %}
+                        <li class="list-group-item meeting-card py-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                
+                                <div>
+                                    <h6 class="mb-1 fw-bold">
+                                        <a href="{% url 'meeting_detail' meeting.pk %}" class="text-dark text-decoration-none">{{ meeting.title|truncatechars:50 }}</a>
+                                    </h6>
+                                    
+                                    <div class="small text-muted">
+                                        <i class="far fa-calendar-alt me-1"></i> {{ meeting.start_time|date:"D, j M Y" }}
+                                        <i class="fas fa-clock ms-3 me-1"></i> {{ meeting.start_time|date:"H:i" }}
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    {% if meeting.is_current %}
+                                        {# Note: Switched to custom modal/message instead of JS alert #}
+                                        {% if meeting.conference_link %}
+                                            <a href="{{ meeting.conference_link }}" target="_blank" class="btn btn-danger live-pulse btn-sm fw-bold">
+                                                <i class="fas fa-video me-1"></i> LIVE!
+                                            </a>
+                                        {% else %}
+                                            <a href="#" class="btn btn-secondary btn-sm fw-bold" 
+                                                title="Linki haipo bado" 
+                                                data-bs-toggle="modal" data-bs-target="#linkMissingModal">
+                                                <i class="fas fa-exclamation-triangle me-1"></i> LIVE
+                                            </a>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-success p-2">
+                                            {% if meeting.is_today %} Leo!
+                                            {% elif meeting.is_tomorrow %} Kesho!
+                                            {% else %} Inakuja
+                                            {% endif %}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item text-center text-muted py-4">
+                            <p class="mb-0"><i class="fas fa-info-circle me-1"></i> Hakuna mikutano iliyopangwa karibuni.</p>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            
+            {# ADMIN PANEL SUMMARY #}
+            {% if members_summary %}
+            <h4 class="mt-4 mb-3 text-dark"><i class="fas fa-tachometer-alt me-2"></i> Admin Panel Summary</h4>
+            
+            {# ORGANIZATION MEMBERSHIP SUMMARY #}
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="card p-3 text-center shadow-sm bg-info bg-opacity-10 h-100">
+                        <div class="text-muted small">Total Members</div>
+                        <div class="fw-bold fs-4">{{ members_total }}</div> 
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card p-3 text-center shadow-sm bg-success bg-opacity-10 h-100">
+                        <div class="text-muted small">Active Members</div>
+                        <div class="fw-bold fs-4 text-success">{{ active_members_count }}</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card p-3 text-center shadow-sm bg-danger bg-opacity-10 h-100">
+                        <div class="text-muted small">Inactive Members</div>
+                        <div class="fw-bold fs-4 text-danger">{{ inactive_members_count }}</div>
+                    </div>
+                </div>
+            </div>
+
+            {# PENDING PAYMENTS TABLE #}
+            <div class="card shadow-lg mt-4">
+                <div class="card-header bg-danger text-white fw-bold d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-exclamation-triangle me-2"></i> Pending Payments ({{ pending_payments|length }})</span>
+                    <a href="{% url 'payment_list' %}" class="btn btn-sm btn-light text-danger">View All <i class="fas fa-arrow-right"></i></a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover mb-0">
+                            <thead class="table-dark sticky-top">
+                                <tr>
+                                    <th>#</th>
+                                    <th>User</th>
+                                    <th>Amount</th>
+                                    <th>Submitted</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment in pending_payments %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td><a href="#" class="text-decoration-none">{{ payment.user.username }}</a></td>
+                                    <td>TZS {{ payment.amount_paid|floatformat:"-2" }}</td> 
+                                    <td>{{ payment.date_submitted|date:"M j, H:i" }}</td>
+                                    <td>
+                                        <a href="{% url 'verify_payment' payment.pk %}" class="btn btn-sm btn-info text-white">Review</a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-3">No pending payments for review.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            {# SUGGESTIONS SECTION (Form and Recent List) #}
+            <div class="row mt-4 g-4">
+                <div class="col-md-6">
+                    <div class="card shadow-lg h-100">
+                        <div class="card-header bg-success text-white fw-bold"><i class="fas fa-lightbulb me-2"></i> Share a Suggestion / Opinion</div>
+                        <div class="card-body">
+                            <form method="post" action="{% url 'dashboard' %}"> 
+                                {% csrf_token %}
+                                
+                                {% for field in suggestion_form %}
+                                    <div class="mb-3">
+                                        <label for="{{ field.id_for_label }}" class="form-label small">{{ field.label }}</label>
+                                        {{ field }}
+                                        {% for error in field.errors %}
+                                            <div class="text-danger small">{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endfor %}
+
+                                <button type="submit" class="btn btn-success mt-2 w-100">
+                                    <i class="fas fa-paper-plane"></i> Submit Suggestion
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card shadow-lg h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                             <span><i class="fas fa-history me-2"></i> Recent Suggestions</span>
+                             {% if members_summary %}
+                                 <a href="{% url 'suggestion_list' %}" class="btn btn-sm btn-outline-dark">View All</a>
+                             {% endif %}
+                        </div>
+                        <div class="card-body p-0">
+                               <div class="table-responsive">
+                                 <ul class="list-group list-group-flush mb-0">
+                                 {% if suggestions %}
+                                     {% for s in suggestions %}
+                                     <li class="list-group-item">
+                                         <div class="d-flex w-100 justify-content-between">
+                                             <h6 class="mb-1 fw-bold">{{ s.user.get_full_name|default:s.user.username }}</h6>
+                                             <small class="text-muted">{{ s.created_at|date:"M d, H:i" }}</small>
+                                         </div>
+                                         <p class="mb-1 small text-truncate">{{ s.message|linebreaksbr|truncatechars:100 }}</p>
+                                     </li>
+                                     {% endfor %}
+                                 {% else %}
+                                     <li class="list-group-item text-center text-muted">Bado hakuna mapendekezo yaliyowasilishwa.</li>
+                                 {% endif %}
+                                 </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div> 
+    </div>
 </div>
+
+{# MODAL FOR ALERT REPLACEMENT (Missing Link) #}
+<div class="modal fade" id="linkMissingModal" tabindex="-1" aria-labelledby="linkMissingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="linkMissingModalLabel"><i class="fas fa-exclamation-circle me-2"></i> Tahadhari!</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="lead">Linki ya Mkutano haijatolewa bado.</p>
+                <p>Tafadhali wasiliana na Mratibu wa Mkutano au Admin ili kupata linki mpya au maelezo zaidi ya namna ya kujiunga.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Funga</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# IMPORTANT: Add Font Awesome and Bootstrap JS if not already in base.html #}
+{# Assuming Font Awesome 5 is included for icons: <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" /> #}
+{# Assuming Bootstrap 5 JS is included for modal: <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script> #}
 
 {% endblock %}

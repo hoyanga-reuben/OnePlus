@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %} 
+{% load tz %} 
+{# Hii inahitaji `pip install django-humanize` na `pip install pytz` na kuongeza 'django.contrib.humanize' na TIME_ZONE kwenye settings #}
+
+{% block title %}{{ meeting.title }} | Mkutano{% endblock %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-body">
+                    
+                    {# --- KICHWA NA STATUS (IMEREKEBISHWA KWA AJILI YA LAYOUT) --- #}
+                    <div class="d-flex align-items-start mb-3">
+                        <h2 class="card-title text-primary fw-bold text-truncate me-auto" 
+                            style="max-width: 80%;"
+                            data-bs-toggle="tooltip" 
+                            data-bs-placement="bottom"
+                            title="{{ meeting.title }}"> {# Kichwa kirefu sasa kinaonyesha Tooltip kamili #}
+                            {{ meeting.title }}
+                        </h2>
+                        <span class="ms-3 flex-shrink-0"> {# flex-shrink-0 inalinda badge isibanwe #}
+                            {% if meeting.is_current %}
+                                <span class="badge bg-danger p-2 fs-6 animated-pulse"><i class="fas fa-video me-1"></i> LIVE NOW</span>
+                            {% elif meeting.is_past %}
+                                <span class="badge bg-secondary p-2 fs-6"><i class="fas fa-history me-1"></i> Imepita</span>
+                            {% else %}
+                                <span class="badge bg-success p-2 fs-6"><i class="far fa-clock me-1"></i> Inakuja</span>
+                            {% endif %}
+                        </span>
+                    </div>
+
+                    <hr>
+                    {# --- MUDA NA MAHALI --- #}
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6 border-end">
+                            <p class="mb-1 text-muted"><i class="far fa-calendar-alt me-2 text-info"></i> Tarehe ya Kuanza</p>
+                            <p class="fs-5 fw-semibold">{{ meeting.start_time|date:"l, jS F Y" }}</p>
+                            <p class="mb-0 text-muted">Muda: {{ meeting.start_time|date:"H:i" }} **{{ TIME_ZONE }}**</p> {# Bolded TIME_ZONE for emphasis #}
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1 text-muted"><i class="fas fa-map-marker-alt me-2 text-info"></i> Mahali</p>
+                            <p class="fs-5 fw-semibold">{{ meeting.location|default:"Online Conference" }}</p>
+                            <p class="mb-0 text-muted">Muda Huisha: {{ meeting.end_time|date:"H:i" }}</p>
+                        </div>
+                    </div>
+
+                    {# --- MAELEZO --- #}
+                    <h5 class="mt-4 mb-2"><i class="fas fa-file-alt me-2 text-secondary"></i> Maelezo</h5>
+                    <div class="card bg-light p-3">
+                        <p class="card-text">{{ meeting.description|linebreaksbr|default:"Hakuna maelezo ya ziada yaliyotolewa kwa mkutano huu." }}</p>
+                    </div>
+
+                    {# --- LINKI YA CONFERENCE (IMEREKEBISHWA KWA ULINZI WA LINKI TUPU) --- #}
+                    {% if meeting.conference_link %}
+                        <div class="alert alert-primary mt-4 d-flex align-items-center" role="alert">
+                            <i class="fas fa-link me-3 fa-lg"></i>
+                            <div>
+                                **Jiunge na Mkutano:**
+                                {% if meeting.is_current %}
+                                    <a href="{{ meeting.conference_link }}" target="_blank" class="alert-link fw-bold ms-2">Bofya Hapa Kuunganishwa Sasa!</a>
+                                {% else %}
+                                    <a href="{{ meeting.conference_link }}" target="_blank" class="alert-link ms-2">Link ya Maandalizi/Zoom Room</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% elif meeting.is_current or not meeting.is_past %}
+                        {# ONYO: Linki haijapatikana lakini Mkutano ni LIVE au Bado Haujapita #}
+                        <div class="alert alert-warning mt-4 d-flex align-items-center" role="alert">
+                            <i class="fas fa-exclamation-triangle me-3 fa-lg"></i>
+                            <div>
+                                **Linki ya Mkutano haijatolewa bado.**
+                                <p class="mb-0 small">Tafadhali subiri au wasiliana na **{{ meeting.organizer.username }}** (Muandaaji) kwa maelezo zaidi.</p>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                </div>
+            </div>
+
+            {# --- VITENDO KWA ORGANIZER/ADMIN --- #}
+            {% if request.user == meeting.organizer or request.user.is_superuser or request.user.ngo_role in 'admin,manager' %}
+                <div class="d-grid gap-2 d-md-block mb-5"> {# Imeongeza mb-5 kwa nafasi chini #}
+                    <a href="{% url 'meeting_update' meeting.pk %}" class="btn btn-warning me-2"><i class="fas fa-edit me-1"></i> Hariri Mkutano</a>
+                    <a href="{% url 'meeting_delete' meeting.pk %}" class="btn btn-danger"><i class="fas fa-trash-alt me-1"></i> Futa Mkutano</a>
+                </div>
+            {% endif %}
+
+        </div>
+
+        {# --- COLUMN YA WASHIRIKI NA ADMIN INFO --- #}
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header bg-light fw-bold"><i class="fas fa-users me-2"></i> Washiriki ({{ meeting.attendees.count }})</div>
+                <div class="list-group list-group-flush" style="max-height: 350px; overflow-y: auto;">
+                    {% for attendee in meeting.attendees.all %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-user-circle me-2 text-muted"></i> {# Added text-muted for softer icon #}
+                                **{{ attendee.username }}**
+                                <small class="text-muted d-block">{{ attendee.get_ngo_role_display }}</small>
+                            </div>
+                            {% if attendee == meeting.organizer %}
+                                <span class="badge bg-primary">Muandaaji</span>
+                            {% elif attendee.is_superuser %}
+                                <span class="badge bg-danger">Admin</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Mshiriki</span>
+                            {% endif %}
+                        </li>
+                    {% empty %}
+                        <li class="list-group-item text-center text-muted">Hakuna washiriki waliochaguliwa.</li>
+                    {% endfor %}
+                </div>
+            </div>
+
+            {# --- TAARIFA ZA ORGANIZER --- #}
+            <div class="card">
+                <div class="card-header bg-light fw-bold"><i class="fas fa-user-tie me-2"></i> Taarifa za Muandaaji</div>
+                <div class="card-body">
+                    <p class="mb-1"><i class="fas fa-user me-2"></i> Jina: **{{ meeting.organizer.get_full_name|default:meeting.organizer.username }}**</p>
+                    <p class="mb-1"><i class="fas fa-envelope me-2"></i> Email: <a href="mailto:{{ meeting.organizer.email }}">{{ meeting.organizer.email }}</a></p>
+                    <p class="mb-1"><i class="fas fa-briefcase me-2"></i> Role: {{ meeting.organizer.get_ngo_role_display }}</p>
+                    <p class="mb-0"><i class="fas fa-plus-square me-2"></i> Imeundwa: {{ meeting.created_at|naturaltime }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Custom CSS for animation (optional) */
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 0, 0, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
+}
+.animated-pulse {
+    animation: pulse 2s infinite;
+}
+</style>
+
+{# MUHIMU: Inahitajika kuanzisha Tooltips kwa kutumia JS, hakikisha hii ipo kwenye base.html yako au unaiongeza hapa. #}
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+});
+</script>
+{% endblock extra_js %}
+
+{% endblock %}

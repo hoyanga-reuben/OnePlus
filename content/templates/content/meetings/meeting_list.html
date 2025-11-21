@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% load static %}
+{% load tz %}
+
+{% block title %}Orodha ya Mikutano{% endblock %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-primary">🗓️ Ratiba ya Mikutano</h2>
+        {% if request.user.is_superuser or request.user.ngo_role in 'admin,accountant,manager,staff' %}
+            <a href="{% url 'meeting_create' %}" class="btn btn-success btn-lg shadow-sm">
+                <i class="fas fa-calendar-plus me-2"></i> Panga Mkutano Mpya
+            </a>
+        {% endif %}
+    </div>
+
+    {# --- SEARCH AND FILTER SECTION (Advanced UI Element) --- #}
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control" placeholder="Tafuta kwa Kichwa, Muandaaji, au Mahali...">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select">
+                        <option selected>Filter kwa Status</option>
+                        <option value="upcoming">Inakuja</option>
+                        <option value="live">Live</option>
+                        <option value="past">Imepita</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select">
+                        <option selected>Panga kwa (Sort By)</option>
+                        <option value="date_asc">Tarehe (Kutoka Zamani)</option>
+                        <option value="date_desc">Tarehe (Kutoka Mpya)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# --- MEETINGS LIST --- #}
+    <div class="row row-cols-1 g-4">
+        {% for meeting in meetings %}
+        <div class="col">
+            <div class="card h-100 shadow-sm meeting-card {% if meeting.is_past %}bg-light text-muted{% endif %}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        {# Title and Status #}
+                        <div>
+                            <h4 class="card-title fw-bold mb-1">
+                                <a href="{% url 'meeting_detail' meeting.pk %}" class="text-decoration-none {% if not meeting.is_past %}text-dark{% else %}text-secondary{% endif %}">{{ meeting.title }}</a>
+                            </h4>
+                            <small class="d-block mb-3">
+                                {% if meeting.is_current %}
+                                    <span class="badge bg-danger animated-pulse"><i class="fas fa-broadcast-tower me-1"></i> LIVE!</span>
+                                {% elif meeting.is_past %}
+                                    <span class="badge bg-secondary"><i class="fas fa-check-circle me-1"></i> Imefanyika</span>
+                                {% else %}
+                                    <span class="badge bg-success"><i class="far fa-hourglass me-1"></i> Inakuja</span>
+                                {% endif %}
+                                | <span class="text-secondary">{{ meeting.start_time|date:"j M H:i" }}</span>
+                            </small>
+                        </div>
+                        
+                        {# Actions #}
+                        {% if request.user == meeting.organizer or request.user.is_superuser or request.user.ngo_role in 'admin,manager' %}
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Vitendo
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item text-warning" href="{% url 'meeting_update' meeting.pk %}"><i class="fas fa-edit me-2"></i> Hariri</a></li>
+                                <li><a class="dropdown-item text-danger" href="{% url 'meeting_delete' meeting.pk %}"><i class="fas fa-trash-alt me-2"></i> Futa</a></li>
+                            </ul>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-4 border-end">
+                            <p class="mb-1 text-muted"><i class="fas fa-user-tie me-2"></i> Muandaaji</p>
+                            <p class="fw-semibold">{{ meeting.organizer.username }}</p>
+                        </div>
+                        <div class="col-md-4 border-end">
+                            <p class="mb-1 text-muted"><i class="fas fa-map-marker-alt me-2"></i> Mahali</p>
+                            <p class="fw-semibold">{{ meeting.location|default:"Online" }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p class="mb-1 text-muted"><i class="fas fa-users me-2"></i> Washiriki</p>
+                            <p class="fw-semibold">{{ meeting.attendees.count }} Watu</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0 pt-0">
+                     <a href="{% url 'meeting_detail' meeting.pk %}" class="btn btn-sm btn-outline-primary">Tazama Maelezo Kamili <i class="fas fa-arrow-right ms-1"></i></a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+            <div class="col text-center mt-5">
+                <div class="alert alert-info" role="alert">
+                    <i class="fas fa-info-circle me-2"></i> Hakuna mikutano iliyopangwa kwa sasa.
+                </div>
+                {% if request.user.is_superuser or request.user.ngo_role in 'admin,accountant,manager,staff' %}
+                    <a href="{% url 'meeting_create' %}" class="btn btn-primary mt-3">Panga Mkutano wa Kwanza</a>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+/* Re-use pulse animation from detail view */
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 0, 0, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); }
+}
+.animated-pulse {
+    animation: pulse 2s infinite;
+}
+.meeting-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 17px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+</style>
+{% endblock %}

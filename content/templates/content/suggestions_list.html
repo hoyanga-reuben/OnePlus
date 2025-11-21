@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Mapendekezo ya Wanachama{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+
+    {# HEADER SECTION #}
+    <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-white rounded shadow-sm border-start border-5 border-info">
+        <h2 class="fw-bold text-dark mb-0">Maoni na Mapendekezo 📝</h2>
+        <span class="badge bg-info text-dark fs-5 py-2 px-3">
+            Jumla: {{ suggestions|length }}
+        </span>
+    </div>
+
+    <div class="card shadow-lg border-0">
+        <div class="card-header bg-primary text-white fw-bold d-flex justify-content-between align-items-center">
+            Orodha ya Maoni Yote
+            <button class="btn btn-light btn-sm" onclick="location.reload();">
+                <i class="fas fa-sync-alt me-1"></i> Refresh
+            </button>
+        </div>
+        <div class="card-body p-3">
+            
+            <div class="table-responsive">
+                {# DataTables initialization will be added in extra_js #}
+                <table class="table table-hover table-striped mb-0 align-middle" id="suggestionsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#ID</th>
+                            <th>Mada (Subject)</th>
+                            <th>Mtoa Maoni</th>
+                            <th>Muhtasari wa Maoni</th>
+                            <th>Tarehe ya Kutuma</th>
+                            <th class="text-center">Hatua</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for suggestion in suggestions %}
+                        <tr data-id="{{ suggestion.id }}">
+                            <td class="text-muted">{{ suggestion.id }}</td>
+                            <td class="fw-semibold text-break">{{ suggestion.subject|default:"(Hakuna Mada)" }}</td>
+                            <td>
+                                {% if suggestion.user %}
+                                <a href="{% url 'profile' %}?user={{ suggestion.user.id }}" class="text-dark">
+                                    <i class="fas fa-user-circle me-1"></i> {{ suggestion.user.get_full_name|default:suggestion.user.username }}
+                                </a>
+                                {% else %}
+                                <span class="text-danger">Mwanachama Amefutwa</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="text-secondary">{{ suggestion.message|truncatechars:80 }}</span>
+                                {% if suggestion.message|length > 80 %}
+                                    <span class="text-primary cursor-pointer read-more" data-bs-toggle="modal" data-bs-target="#suggestionModal" data-message="{{ suggestion.message }}" data-subject="{{ suggestion.subject }}">
+                                        ...soma zaidi
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>{{ suggestion.created_at|date:"M d, Y H:i" }}</td>
+                            <td class="text-center">
+                                {# Kitufe cha 'View' ili kuonyesha maoni kamili #}
+                                <button class="btn btn-sm btn-outline-info view-suggestion-btn" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#suggestionModal"
+                                        data-message="{{ suggestion.message }}"
+                                        data-subject="{{ suggestion.subject }}"
+                                        data-user="{% if suggestion.user %}{{ suggestion.user.get_full_name|default:suggestion.user.username }}{% else %}N/A{% endif %}"
+                                        data-date="{{ suggestion.created_at|date:'M d, Y H:i' }}">
+                                    <i class="fas fa-eye"></i> Tazama
+                                </button>
+                                
+                                {# Kitufe cha 'Reviewed' kinaweza kuwa POST action baadaye #}
+                                <button class="btn btn-sm btn-outline-success ms-1 d-none" disabled>
+                                    <i class="fas fa-check"></i> Reviewed
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center p-4">
+                                <i class="fas fa-search-minus fa-2x text-warning mb-2"></i>
+                                <p class="fw-bold">Hakuna maoni yaliyopatikana kwa sasa.</p>
+                                <small class="text-muted">Rudi tena baadaye au hakikisha wanachama wametuma mapendekezo.</small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+{# Modal for viewing full suggestion details #}
+<div class="modal fade" id="suggestionModal" tabindex="-1" aria-labelledby="suggestionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="suggestionModalLabel"><i class="fas fa-comment-dots me-2"></i> Maelezo Kamili ya Maoni</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-1 text-muted">Kutoka kwa: <strong id="modal-user"></strong> | Tarehe: <small id="modal-date"></small></p>
+                <h4 class="fw-bold text-dark mt-2" id="modal-subject"></h4>
+                <hr>
+                <div class="alert alert-light border p-3">
+                    <p id="modal-message" class="text-break"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Funga</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+{# Kwa muonekano wa kitaalamu na uwezo wa kutafuta/kuchuja, tumia DataTables #}
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+<script>
+    // Inahitaji jQuery kabla ya kutumia DataTables
+    $(document).ready(function() {
+        // Initialize DataTables
+        $('#suggestionsTable').DataTable({
+            "order": [[4, "desc"]], // Panga kulingana na Tarehe ya Kutuma (Safu ya 4), kushuka
+            "language": {
+                "lengthMenu": "Onyesha entries _MENU_",
+                "zeroRecords": "Hakuna maoni yanayofanana na utafutaji",
+                "info": "Inaonyesha ukurasa wa _PAGE_ kati ya _PAGES_",
+                "infoEmpty": "Hakuna rekodi zinazoonyeshwa",
+                "infoFiltered": "(Imechujwa kutoka jumla ya _MAX_ rekodi)",
+                "search": "Tafuta:",
+                "paginate": {
+                    "next": "Inayofuata",
+                    "previous": "Iliyotangulia"
+                }
+            }
+        });
+
+        // Modal Logic kwa 'Tazama'
+        $('#suggestionModal').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget); // Kitufe kilichobonyezwa
+            var subject = button.data('subject');
+            var message = button.data('message');
+            var user = button.data('user');
+            var date = button.data('date');
+
+            var modal = $(this);
+            modal.find('#modal-subject').text(subject);
+            modal.find('#modal-message').text(message);
+            modal.find('#modal-user').text(user);
+            modal.find('#modal-date').text(date);
+        });
+    });
+</script>
+{% endblock %}
+
+{% block extra_css %}
+{# CSS kwa ajili ya DataTables na Bootstrap #}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+<style>
+    /* Custom styles for professional look */
+    .container-fluid {
+        padding: 0 30px; /* Ongeza nafasi kando */
+    }
+    .card-header.bg-primary {
+        background-color: #007bff !important; /* Blue ya kitaalamu */
+        border-bottom: none;
+    }
+    .read-more {
+        cursor: pointer;
+        font-style: italic;
+    }
+    /* Hakikisha meza haibadilishi rangi ya background kwa hover */
+    #suggestionsTable.table-hover tbody tr:hover {
+        background-color: #f7f7f7;
+    }
+</style>
+{% endblock %}

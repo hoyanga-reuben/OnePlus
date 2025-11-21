@@ -3,6 +3,8 @@ from . import views
 from django.contrib.auth import views as auth_views
 from .views import EmailChangeView
 from .views import DeleteAccountView
+from .views import UserListView,MeetingListView, MeetingDetailView, MeetingCreateView, MeetingUpdateView, MeetingDeleteView
+
 
 urlpatterns = [
     # Blog
@@ -41,4 +43,14 @@ urlpatterns = [
     path("account/delete/", DeleteAccountView.as_view(), name="delete_account"),
     path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
     path('make-payment/', views.make_payment, name='make_payment'),
+    path('suggestions/', views.suggestion_list, name='suggestion_list'),
+    path('members/all/', UserListView.as_view(), name='user_list'),
+    
+
+    # URLs za Mikutano
+    path('meetings/', MeetingListView.as_view(), name='meeting_list'),
+    path('meetings/create/', MeetingCreateView.as_view(), name='meeting_create'),
+    path('meetings/<int:pk>/', MeetingDetailView.as_view(), name='meeting_detail'),
+    path('meetings/<int:pk>/edit/', MeetingUpdateView.as_view(), name='meeting_update'),
+    path('meetings/<int:pk>/delete/', MeetingDeleteView.as_view(), name='meeting_delete'),
 ]

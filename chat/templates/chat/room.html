@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Chat na {{ other_user.username }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    Mazungumzo na: <span class="fw-bold">{{ other_user.username }}</span>
+                </h5>
+                <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-light">Rudi</a>
+            </div>
+            
+            <div id="chat-log" class="card-body p-4 bg-light" style="height: 400px; overflow-y: auto;">
+                {% for message in messages reversed %}
+                    {% if message.sender == request.user %}
+                        <div class="d-flex justify-content-end mb-3">
+                            <div class="bg-info-subtle p-3 rounded shadow-sm" style="max-width: 70%;">
+                                <p class="small fw-semibold text-primary mb-1">Mimi</p>
+                                <p class="mb-0 text-dark">{{ message.content|linebreaksbr }}</p>
+                                <span class="text-muted small d-block text-end mt-1">{{ message.timestamp|date:"h:i A" }}</span>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="d-flex justify-content-start mb-3">
+                            <div class="bg-white p-3 rounded shadow-sm" style="max-width: 70%;">
+                                <p class="small fw-semibold text-secondary mb-1">{{ other_user.username }}</p>
+                                <p class="mb-0 text-dark">{{ message.content|linebreaksbr }}</p>
+                                <span class="text-muted small d-block text-end mt-1">{{ message.timestamp|date:"h:i A" }}</span>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% empty %}
+                    <p class="text-center text-muted">Bado hamjatumiana ujumbe. Anzisha mazungumzo!</p>
+                {% endfor %}
+            </div>
+            
+            <div class="card-footer bg-white p-3">
+                <form id="chat-form" class="d-flex">
+                    {% csrf_token %} 
+                    <input 
+                        id="chat-message-input" 
+                        type="text" 
+                        placeholder="Andika ujumbe wako hapa..." 
+                        class="form-control me-2"
+                    />
+                    <button 
+                        id="chat-message-submit" 
+                        type="submit" 
+                        class="btn btn-primary"
+                    >
+                        Tuma
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script id="room-data" type="application/json">
+{
+    "room_id": "{{ room.id|default:0 }}",
+    "current_username": "{{ request.user.username|default:'Guest' }}"
+}
+</script>
+
+<script>
+    // 🛑 SOLUTION YA UHAKIKA: Funga code yote ya chat kwenye DOMContentLoaded.
+    // Hii inahakikisha 'room-data' element inapatikana kabla ya code kuanza kuisoma.
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        const chatLog = document.querySelector('#chat-log');
+        if (chatLog) {
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+        
+        // 1. Pata data ya chumba kutoka kwenye tagi ya JSON script
+        const roomDataElement = document.getElementById('room-data');
+        let roomData = { room_id: 0, current_username: 'Guest' }; 
+        
+        if (roomDataElement) {
+            try {
+                // Tunatumia JSON.parse kusoma data kutoka kwenye tagi ya script
+                roomData = JSON.parse(roomDataElement.textContent);
+                // Inabidi tubadili room_id kuwa integer (namba) kwani JSON.parse inaweza kuipa kama string
+                roomData.room_id = parseInt(roomData.room_id);
+            } catch (e) {
+                console.error("Kosa la Kuchambua JSON: ", e);
+            }
+        } else {
+            console.error("Kosa: Elementi ya 'room-data' haikupatikana. Inatumia thamani chaguomsingi.");
+        }
+        
+        const roomID = roomData.room_id;
+        const currentUsername = roomData.current_username;
+        
+        // 2. Anzisha WebSocket
+        const wsProtocol = window.location.protocol === "https:" ? "wss://" : "ws://";
+        let chatSocket = null;
+        
+        if (typeof WebSocket !== 'undefined' && roomID !== 0) {
+            chatSocket = new WebSocket(
+                wsProtocol
+                + window.location.host
+                + '/ws/chat/'
+                + roomID
+                + '/'
+            );
+        } else {
+            console.warn("WebSocket haitaanzishwa: Aidha WebSocket haipatikani au Room ID ni 0.");
+        }
+
+
+        // 3. Logic ya WebSocket na Kazi
+        if (chatSocket) {
+            
+            chatSocket.onmessage = function(e) {
+                const data = JSON.parse(e.data);
+                const message = data.message;
+                const username = data.username;
+                const timestamp = data.timestamp;
+                
+                const isMe = username === currentUsername;
+                
+                const messageHtml = `
+                    <div class="d-flex ${isMe ? 'justify-content-end' : 'justify-content-start'} mb-3">
+                        <div class="${isMe ? 'bg-info-subtle' : 'bg-white'} p-3 rounded shadow-sm" style="max-width: 70%;">
+                            <p class="small fw-semibold ${isMe ? 'text-primary' : 'text-secondary'} mb-1">${isMe ? 'Mimi' : username}</p>
+                            <p class="mb-0 text-dark">${message}</p>
+                            <span class="text-muted small d-block text-end mt-1">${timestamp}</span>
+                        </div>
+                    </div>
+                `;
+                
+                chatLog.insertAdjacentHTML('beforeend', messageHtml);
+                chatLog.scrollTop = chatLog.scrollHeight;
+            };
+
+            chatSocket.onclose = function(e) {
+                console.error('Chat socket imefungwa ghafla:', e);
+            };
+        }
+        
+
+        // 4. Kazi ya Kutuma Ujumbe
+        document.querySelector('#chat-form').onsubmit = function(e) {
+            e.preventDefault(); 
+            
+            const messageInput = document.querySelector('#chat-message-input');
+            const message = messageInput.value.trim();
+            
+            if (message && chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+                chatSocket.send(JSON.stringify({
+                    'message': message
+                }));
+                
+                messageInput.value = '';
+            } else if (message) {
+                console.error("Haiwezi kutuma ujumbe: WebSocket haijaanzishwa au muunganisho umefungwa.");
+            }
+            return false;
+        };
+        
+        // 5. Tuma ujumbe kwa Enter Key
+        document.querySelector('#chat-message-input').focus();
+        document.querySelector('#chat-message-input').onkeyup = function(e) {
+            if (e.key === 'Enter') {
+                document.querySelector('#chat-form').dispatchEvent(new Event('submit', { cancelable: true }));
+            }
+        };
+
+    }); // 🛑 Mwisho wa DOMContentLoaded
+</script>
+{% endblock extra_js %}

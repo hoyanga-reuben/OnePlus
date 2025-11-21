@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+
+{% block title %}Saraka ya Wanachama Wote{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            
+            <!-- Kichwa Kikuu na Muhtasari wa Juu -->
+            <div class="text-center mb-5">
+                <h1 class="display-5 fw-bolder text-dark mb-2">
+                    <i class="fas fa-users me-3 text-primary"></i> Saraka ya Wanachama
+                </h1>
+                <p class="lead text-muted">Ungana na Wataalam na Wanachama wenzako wa Mtandao. </p>
+                <div class="d-flex justify-content-center gap-4 mt-3">
+                    <span class="badge rounded-pill bg-dark py-2 px-3 shadow-sm">Jumla ya Watumiaji: <strong class="ms-1">{{ users.count }}</strong></span>
+                    <span class="badge rounded-pill bg-success py-2 px-3 shadow-sm">Online Sasa: <strong class="ms-1">{{ online_users_count }}</strong></span>
+                </div>
+            </div>
+
+            <!-- Jopo la Kuchuja (Filtering Panel) -->
+            <div class="card shadow-lg mb-4 p-3 border-0 bg-light-subtle rounded-3">
+                <div class="d-flex flex-wrap align-items-center justify-content-between">
+                    <!-- Utafutaji -->
+                    <div class="flex-grow-1 me-3 mb-2 mb-md-0">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-0"><i class="fas fa-search text-muted"></i></span>
+                            <input type="text" id="memberSearch" class="form-control border-0 shadow-sm" placeholder="Tafuta kwa Jina, Barua Pepe au Wadhifa...">
+                        </div>
+                    </div>
+                    
+                    <!-- Kuchuja Hali (Status Filter) -->
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-dark fw-bold" data-filter="all" id="filterAll">
+                            Wote
+                        </button>
+                        <button type="button" class="btn btn-outline-success" data-filter="online" id="filterOnline">
+                            Online
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" data-filter="offline" id="filterOffline">
+                            Offline
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Orodha ya Wanachama -->
+            <div class="card shadow-lg border-0 rounded-4">
+                <div class="card-header bg-primary text-white fw-bold d-flex justify-content-between align-items-center rounded-top-4">
+                    <span>Orodha Kamili ya Watumiaji</span>
+                    <i class="fas fa-list-ul"></i>
+                </div>
+                
+                <ul class="list-group list-group-flush" id="membersList">
+                    {% for user in users %}
+                        
+                        {# Ondoa mtumiaji aliye-login mwenyewe #}
+                        {% if user.pk != request.user.pk %}
+                            
+                            <!-- Kuamua Hali (Online/Offline) -->
+                            {% with is_online=False %}
+                                {% if user.last_activity|date:"Y-m-d H:i:s" > active_time_threshold|date:"Y-m-d H:i:s" %}
+                                    {% with is_online=True %}
+                                    {% endwith %}
+                                {% endif %}
+                            {% endwith %}
+                            
+                            <li class="list-group-item list-group-item-action member-item py-3 px-4 d-flex justify-content-between align-items-center 
+                                {% if is_online %} online-member {% else %} offline-member {% endif %}"
+                                data-status="{% if is_online %}online{% else %}offline{% endif %}"
+                                data-search-terms="{{ user.username|lower }} {{ user.email|lower }} {{ user.get_full_name|lower|default:'' }} {{ user.get_ngo_role_display|lower|default:'mwanachama' }}">
+                                
+                                <div class="d-flex align-items-center flex-grow-1">
+                                    
+                                    <!-- Avatar na Status Dot -->
+                                    <div class="status-avatar me-3">
+                                        <!-- Hapa tunaweza kutumia avatar halisi ya mtumiaji au placeholder -->
+                                        <img src="{% if user.profile_picture.url %}{{ user.profile_picture.url }}{% else %}https://placehold.co/40x40/0d6efd/ffffff?text={{ user.username|first|upper }}{% endif %}" 
+                                             class="rounded-circle avatar-sm border border-2 {% if is_online %}border-success{% else %}border-secondary{% endif %}" alt="Avatar" style="width: 40px; height: 40px; object-fit: cover;">
+                                        
+                                        <span class="status-dot 
+                                            {% if is_online %}bg-success animated-pulse-dot{% else %}bg-secondary{% endif %}" 
+                                            data-bs-toggle="tooltip" title="{% if is_online %}Online Sasa{% else %}Last Seen: {{ user.last_activity|timesince }} ago{% endif %}">
+                                        </span>
+                                    </div>
+                                    
+                                    <!-- Maelezo ya Mtumiaji -->
+                                    <div class="flex-grow-1 me-3">
+                                        <h5 class="mb-0 fw-bold d-flex align-items-center text-truncate">
+                                            {{ user.username }} 
+                                            {% if user.get_full_name %}
+                                                <small class="text-muted fw-normal ms-2 d-none d-sm-inline">({{ user.get_full_name }})</small>
+                                            {% endif %}
+                                            {% if user.is_superuser %}
+                                                <span class="badge bg-danger small ms-2 shadow-sm" data-bs-toggle="tooltip" title="Msimamizi Mkuu">ADMIN</span>
+                                            {% endif %}
+                                        </h5>
+                                        
+                                        <small class="text-muted d-block text-truncate">
+                                            <i class="fas fa-briefcase me-1"></i> {{ user.get_ngo_role_display|default:"Mwanachama" }} &bull; {{ user.email }}
+                                        </small>
+                                    </div>
+                                </div>
+                                
+                                <!-- Vitendo -->
+                                <div class="d-flex align-items-center">
+                                    
+                                    {# Kitendo cha Chat/Mawasiliano 1-kwa-1 #}
+                                    <a href="{% url 'chat:start_chat' other_user_id=user.pk %}" 
+                                       class="btn btn-sm btn-primary chat-button me-3 shadow-sm transition-ease" 
+                                       data-bs-toggle="tooltip" title="Anzisha Mawasiliano Moja kwa Moja">
+                                        <i class="far fa-comment-dots me-1"></i> Chat Naye
+                                    </a>
+                                    
+                                    {# Status Badge Kamili #}
+                                    <span class="badge py-2 px-3 fw-bold shadow-sm 
+                                        {% if is_online %}bg-success{% else %}bg-secondary{% endif %} d-none d-md-block">
+                                        {% if is_online %}ONLINE{% else %}OFFLINE{% endif %}
+                                    </span>
+                                </div>
+                            </li>
+                            
+                        {% endif %} 
+                    {% empty %}
+                        <!-- Hakuna Wanachama Wengine -->
+                        <li class="list-group-item text-center text-muted py-5">
+                            <i class="far fa-frown fa-2x mb-3"></i>
+                            <h4 class="mb-0">Samahani, hakuna wanachama wengine walio sajiliwa isipokuwa wewe.</h4>
+                        </li>
+                    {% endfor %}
+                    
+                    <!-- Huu ni uwanja wa kuonyesha matokeo ya utafutaji yakiwa empty -->
+                    <li id="noResults" class="list-group-item text-center text-muted py-5" style="display: none;">
+                        <i class="fas fa-exclamation-circle fa-2x mb-3"></i>
+                        <h4 class="mb-0">Hakuna matokeo yanayolingana na utafutaji/kichujio chako.</h4>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Paging - Kama unatumia pagination -->
+            {% if is_paginated %}
+                <nav class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Iliyopita</a></li>
+                        {% endif %}
+                        <li class="page-item active"><a class="page-link" href="#">{{ page_obj.number }}</a></li>
+                        {% if page_obj.has_next %}
+                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Ifuatayo</a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+{# ---------------------------------------------------------------------------------------------------------------------- #}
+{# CUSTOM CSS & JS #}
+{# ---------------------------------------------------------------------------------------------------------------------- #}
+
+<style>
+/* 1. Pulse Animation kwa Online Dot */
+@keyframes pulse-dot {
+    0% { transform: scale(0.9); opacity: 0.8; }
+    50% { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(0.9); opacity: 0.8; }
+}
+
+.animated-pulse-dot {
+    animation: pulse-dot 1.5s infinite;
+}
+
+/* 2. Status Avatar Setup */
+.status-avatar {
+    position: relative;
+    display: inline-block;
+    width: 40px; /* Same as img width */
+    height: 40px; /* Same as img height */
+}
+
+.status-dot {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid white; /* For visibility against dark backgrounds */
+}
+
+/* 3. List Item Hover Effect */
+.list-group-item-action:hover {
+    background-color: var(--bs-light); /* Rangi laini wakati wa ku-hover */
+    transform: translateY(-2px); /* Kuinuka kidogo juu */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.transition-ease {
+    transition: all 0.3s ease;
+}
+
+.chat-button {
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.chat-button:hover {
+    transform: scale(1.05);
+}
+
+/* 4. Filter Button Styling (kwa Button Group) */
+.btn-group .btn.active {
+    background-color: var(--bs-primary);
+    color: white !important;
+    border-color: var(--bs-primary);
+    box-shadow: 0 2px 5px rgba(13, 110, 253, 0.3);
+}
+
+/* 5. Kuweka hali ya List Items Online/Offline */
+.offline-member {
+    opacity: 0.8;
+}
+
+.online-member {
+    /* Wanaonline wawe na uzito zaidi */
+    border-left: 5px solid var(--bs-success);
+    padding-left: 19px !important; /* Marekebisho ya padding baada ya border */
+}
+
+/* Responsive adjustment for small screens */
+@media (max-width: 768px) {
+    .chat-button {
+        padding: 5px 10px;
+        font-size: 0.8rem;
+        margin-right: 10px !important;
+    }
+    .status-avatar {
+        width: 30px;
+        height: 30px;
+    }
+    .status-dot {
+        width: 10px;
+        height: 10px;
+    }
+    .status-avatar img {
+        width: 30px !important;
+        height: 30px !important;
+    }
+}
+</style>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // 1. Kuanzisha Tooltips zote za Bootstrap
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+
+    // 2. Utendaji wa Utafutaji wa Haraka
+    const searchInput = document.getElementById('memberSearch');
+    const memberItems = document.querySelectorAll('.member-item');
+    const noResults = document.getElementById('noResults');
+    const filterButtons = document.querySelectorAll('.btn-group button');
+    let currentFilter = 'all';
+
+    function updateList() {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        let resultsFound = false;
+        
+        memberItems.forEach(item => {
+            const searchTerms = item.getAttribute('data-search-terms');
+            const status = item.getAttribute('data-status');
+
+            // Angalia utafutaji wa maandishi
+            const matchesSearch = searchTerms.includes(searchTerm);
+            
+            // Angalia kichujio cha hali (status filter)
+            const matchesFilter = (currentFilter === 'all' || status === currentFilter);
+
+            if (matchesSearch && matchesFilter) {
+                item.style.display = 'flex';
+                resultsFound = true;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+
+        // Onyesha/ficha ujumbe wa "Hakuna Matokeo"
+        if (resultsFound) {
+            noResults.style.display = 'none';
+        } else {
+            // Hakikisha ujumbe unaonekana tu kama kuna wanachama
+            if (memberItems.length > 0) {
+                 noResults.style.display = 'flex';
+            }
+        }
+    }
+
+    // Listener kwa ajili ya kuandika kwenye Search
+    searchInput.addEventListener('keyup', updateList);
+    searchInput.addEventListener('change', updateList);
+
+    // Listener kwa ajili ya vifungo vya kuchuja
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Ondoa 'active' kutoka kwenye vifungo vyote
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            
+            // Weka 'active' kwenye kitufe kilichobonyezwa
+            this.classList.add('active');
+            
+            // Weka kichujio kipya
+            currentFilter = this.getAttribute('data-filter');
+            
+            // Rudia utafutaji na kuchuja
+            updateList();
+        });
+    });
+    
+    // Weka 'Wote' kama default active filter wakati ukurasa unapakia
+    document.getElementById('filterAll').classList.add('active');
+});
+</script>
+{% endblock extra_js %}
+
+{% endblock content %}
