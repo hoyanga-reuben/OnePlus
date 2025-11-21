@@ -15,6 +15,7 @@ DEBUG = False
 ALLOWED_HOSTS = [
     "127.0.0.1",
     "localhost",
+    "hoyangareuben1998.pythonanywhere.com",
     ".pythonanywhere.com",
 ]
 
@@ -85,10 +86,10 @@ WSGI_APPLICATION = 'oneplus_site.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'Reuben1998$oneplusresilence_DB',    # Your DB name in PythonAnywhere
-        'USER': 'Reuben1998',                    # Replace with PythonAnywhere MySQL user
+        'NAME': 'hoyangareuben1998$oneplusresilence_DB',    # Your DB name in PythonAnywhere
+        'USER': 'hoyangareuben1998',                    # Replace with PythonAnywhere MySQL user
         'PASSWORD': '@Hoyanga-1998#',      # Replace with MySQL password
-        'HOST': 'Reuben1998.mysql.pythonanywhere-services.com',
+        'HOST': 'hoyangareuben1998.mysql.pythonanywhere-services.com',
         'PORT': '3306',
     }
 }
@@ -112,7 +113,7 @@ ACCOUNT_LOGOUT_REDIRECT_URL = '/'
 
 ACCOUNT_USERNAME_REQUIRED = True
 ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+ACCOUNT_EMAIL_VERIFICATION = "none" #"mandatory"
 ACCOUNT_AUTHENTICATION_METHOD = "username_email"
 
 ACCOUNT_FORMS = {
@@ -159,10 +160,11 @@ CKEDITOR_5_CONFIGS = {
 }
 
 # ===================== SECURITY (production) =====================
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
+CSRF_TRUSTED_ORIGINS = ['https://hoyangareuben1998.pythonanywhere.com']
 
 # ===================== CRON JOBS =====================
 CRONJOBS = [
